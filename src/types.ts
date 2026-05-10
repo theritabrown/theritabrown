@@ -8,6 +8,7 @@ export type Profile = {
   handle: string
   tagline: string
   bio: string
+  statusText: string
   avatarUrl: string
   heroImageUrl: string
   location: string

@@ -6,6 +6,7 @@ create table if not exists public.profiles (
   handle text not null,
   tagline text not null,
   bio text not null,
+  status_text text not null default 'Live / Live content synced',
   avatar_url text not null,
   hero_image_url text not null,
   location text not null,
@@ -13,6 +14,9 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.profiles
+  add column if not exists status_text text not null default 'Live / Live content synced';
 
 create table if not exists public.product_collections (
   id uuid primary key default gen_random_uuid(),
@@ -136,6 +140,7 @@ insert into public.profiles (
   handle,
   tagline,
   bio,
+  status_text,
   avatar_url,
   hero_image_url,
   location,
@@ -146,6 +151,7 @@ insert into public.profiles (
   '@ritabrowne',
   'Home and lifestyle finds for calm, cozy everyday living.',
   'Sharing favorite home, lifestyle, beauty, and family finds that blend comfort, style, and simplicity.',
+  'Live / Live content synced',
   'https://ugc.production.linktr.ee/02e07ec7-f0f2-4bef-ba73-9834c3185447_IMG-9417-Facetune-28-12-2024-14-54-27.jpeg?io=true&size=avatar-v3_0',
   'https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&w=1200&q=85',
   'Lifestyle creator',
@@ -155,6 +161,7 @@ insert into public.profiles (
   handle = excluded.handle,
   tagline = excluded.tagline,
   bio = excluded.bio,
+  status_text = excluded.status_text,
   avatar_url = excluded.avatar_url,
   hero_image_url = excluded.hero_image_url,
   location = excluded.location,

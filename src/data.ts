@@ -6,6 +6,7 @@ export const profile: Profile = {
   handle: '@theritabrown',
   tagline: 'Home and lifestyle finds for calm, cozy everyday living.',
   bio: 'Sharing favorite home, lifestyle, beauty, and family finds that blend comfort, style, and simplicity.',
+  statusText: 'Live / Live content synced',
   avatarUrl:
     'https://ugc.production.linktr.ee/02e07ec7-f0f2-4bef-ba73-9834c3185447_IMG-9417-Facetune-28-12-2024-14-54-27.jpeg?io=true&size=avatar-v3_0',
   heroImageUrl:

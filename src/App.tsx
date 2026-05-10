@@ -207,9 +207,6 @@ const demoSiteData: SiteData = {
 
 function App() {
   const [siteData, setSiteData] = useState<SiteData | null>(hasSupabaseConfig ? null : demoSiteData)
-  const [status, setStatus] = useState(
-    hasSupabaseConfig ? 'Loading creator edit...' : 'Preview mode with demo data',
-  )
   const [usingDemoData, setUsingDemoData] = useState(!hasSupabaseConfig)
 
   useEffect(() => {
@@ -222,13 +219,11 @@ function App() {
         }
         setSiteData(data)
         setUsingDemoData(false)
-        setStatus('Live content synced')
       })
       .catch((error) => {
         console.error(error)
         if (isMounted) {
           setSiteData(demoSiteData)
-          setStatus('Preview mode with demo data')
           setUsingDemoData(true)
         }
       })
@@ -281,17 +276,13 @@ function App() {
     )
   }
 
-  return <PublicHome data={siteData} status={status} usingDemoData={usingDemoData} />
+  return <PublicHome data={siteData} />
 }
 
 function PublicHome({
   data,
-  status,
-  usingDemoData,
 }: {
   data: SiteData
-  status: string
-  usingDemoData: boolean
 }) {
   const featuredCollection = data.collections[0]
   const featuredProducts = data.products.filter((product) => product.isActive).slice(0, 4)
@@ -311,7 +302,7 @@ function PublicHome({
               <img src={data.profile.avatarUrl} alt={data.profile.name} />
             </div>
           </div>
-          <p className="sync-state">{usingDemoData ? 'Preview' : 'Live'} / {status}</p>
+          <p className="sync-state">{data.profile.statusText}</p>
           <h1>{data.profile.name}</h1>
           <p className="handle">{data.profile.handle}</p>
           <p className="bio">{data.profile.tagline}</p>
@@ -1229,6 +1220,10 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                 <label>
                   Bio
                   <textarea value={profileDraft.bio} onChange={(event) => setProfileDraft({ ...profileDraft, bio: event.target.value })} required />
+                </label>
+                <label>
+                  Status text
+                  <input value={profileDraft.statusText} onChange={(event) => setProfileDraft({ ...profileDraft, statusText: event.target.value })} required />
                 </label>
                 <label>
                   Location / descriptor
