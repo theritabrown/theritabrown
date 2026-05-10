@@ -20,15 +20,24 @@ import {
   Trash2,
 } from 'lucide-react'
 import {
+  SiDiscord,
+  SiEtsy,
   SiFacebook,
   SiInstagram,
+  SiLinktree,
+  SiPatreon,
   SiPinterest,
   SiShopify,
+  SiSnapchat,
+  SiSubstack,
   SiTarget,
   SiTiktok,
+  SiTwitch,
   SiWalmart,
+  SiWhatsapp,
   SiYoutube,
 } from 'react-icons/si'
+import { FaLinkedinIn, FaTelegram, FaThreads, FaXTwitter } from 'react-icons/fa6'
 import './App.css'
 import { bioLinks as demoLinks, collections as demoCollections, products as demoProducts, profile as demoProfile } from './data'
 import {
@@ -88,8 +97,21 @@ const iconMap = {
   tiktok: SiTiktok,
   music: SiTiktok,
   youtube: SiYoutube,
+  x: FaXTwitter,
+  twitter: FaXTwitter,
+  threads: FaThreads,
   facebook: SiFacebook,
   pinterest: SiPinterest,
+  linkedin: FaLinkedinIn,
+  snapchat: SiSnapchat,
+  twitch: SiTwitch,
+  discord: SiDiscord,
+  whatsapp: SiWhatsapp,
+  telegram: FaTelegram,
+  substack: SiSubstack,
+  patreon: SiPatreon,
+  etsy: SiEtsy,
+  linktree: SiLinktree,
   walmart: SiWalmart,
   target: SiTarget,
   shopify: SiShopify,
@@ -97,16 +119,48 @@ const iconMap = {
   link: LinkIcon,
 }
 
+const socialIconKeys = new Set([
+  'instagram',
+  'tiktok',
+  'youtube',
+  'x',
+  'twitter',
+  'threads',
+  'facebook',
+  'pinterest',
+  'linkedin',
+  'snapchat',
+  'twitch',
+  'discord',
+  'whatsapp',
+  'telegram',
+  'substack',
+  'patreon',
+  'linktree',
+])
+
 function getLinkIconKey(link: Pick<BioLink, 'href' | 'icon'>) {
   const href = link.href.toLowerCase()
 
   if (href.includes('instagram.com')) return 'instagram'
   if (href.includes('tiktok.com')) return 'tiktok'
   if (href.includes('youtube.com') || href.includes('youtu.be')) return 'youtube'
+  if (href.includes('twitter.com') || href.includes('x.com')) return 'x'
+  if (href.includes('threads.net')) return 'threads'
   if (href.includes('facebook.com') || href.includes('fb.com')) return 'facebook'
   if (href.includes('pinterest.com')) return 'pinterest'
+  if (href.includes('linkedin.com')) return 'linkedin'
+  if (href.includes('snapchat.com')) return 'snapchat'
+  if (href.includes('twitch.tv')) return 'twitch'
+  if (href.includes('discord.gg') || href.includes('discord.com')) return 'discord'
+  if (href.includes('wa.me') || href.includes('whatsapp.com')) return 'whatsapp'
+  if (href.includes('t.me') || href.includes('telegram.me') || href.includes('telegram.org')) return 'telegram'
+  if (href.includes('substack.com')) return 'substack'
+  if (href.includes('patreon.com')) return 'patreon'
+  if (href.includes('linktr.ee') || href.includes('linktree')) return 'linktree'
   if (href.includes('walmart.com') || href.includes('walmrt.us')) return 'walmart'
   if (href.includes('target.com')) return 'target'
+  if (href.includes('etsy.com')) return 'etsy'
   if (href.includes('shopify.com') || href.includes('myshopify.com')) return 'shopify'
 
   return link.icon in iconMap ? link.icon : 'link'
@@ -118,6 +172,10 @@ function LinkIconGlyph({ link, size }: { link: Pick<BioLink, 'href' | 'icon'>; s
   const iconSize = iconKey === 'walmart' ? Math.round(size * 1.45) : size
 
   return <Icon size={iconSize} />
+}
+
+function isSocialProfileLink(link: BioLink) {
+  return socialIconKeys.has(getLinkIconKey(link))
 }
 
 const blankLinkDraft: AdminDraft = {
@@ -237,8 +295,9 @@ function PublicHome({
 }) {
   const featuredCollection = data.collections[0]
   const featuredProducts = data.products.filter((product) => product.isActive).slice(0, 4)
-  const instagramLink = data.links.find((link) => link.isActive && (link.icon === 'instagram' || link.href.includes('instagram.com')))
-  const tiktokLink = data.links.find((link) => link.isActive && (link.icon === 'tiktok' || link.icon === 'music' || link.href.includes('tiktok.com')))
+  const socialLinks = data.links
+    .filter((link) => link.isActive && isSocialProfileLink(link))
+    .sort((a, b) => a.sortOrder - b.sortOrder)
 
   return (
     <main className="site-shell home-screen">
@@ -256,21 +315,15 @@ function PublicHome({
           <h1>{data.profile.name}</h1>
           <p className="handle">{data.profile.handle}</p>
           <p className="bio">{data.profile.tagline}</p>
-          <div className="social-row" aria-label="Social links">
-            {instagramLink ? (
-              <a href={instagramLink.href} target="_blank" rel="noreferrer" aria-label="Instagram">
-                <SiInstagram size={18} />
-              </a>
-            ) : null}
-            {tiktokLink ? (
-              <a href={tiktokLink.href} target="_blank" rel="noreferrer" aria-label="TikTok">
-                <SiTiktok size={18} />
-              </a>
-            ) : null}
-            <a href="/admin" aria-label="Admin">
-              <Store size={18} />
-            </a>
-          </div>
+          {socialLinks.length ? (
+            <div className="social-row" aria-label="Social links">
+              {socialLinks.map((link) => (
+                <a href={link.href} target="_blank" rel="noreferrer" aria-label={link.label} key={link.id}>
+                  <LinkIconGlyph link={link} size={18} />
+                </a>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="link-stack" aria-label="Rita Brown links">
@@ -786,10 +839,22 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                                     <option value="instagram">Instagram</option>
                                     <option value="tiktok">TikTok</option>
                                     <option value="youtube">YouTube</option>
+                                    <option value="x">X / Twitter</option>
+                                    <option value="threads">Threads</option>
                                     <option value="facebook">Facebook</option>
                                     <option value="pinterest">Pinterest</option>
+                                    <option value="linkedin">LinkedIn</option>
+                                    <option value="snapchat">Snapchat</option>
+                                    <option value="twitch">Twitch</option>
+                                    <option value="discord">Discord</option>
+                                    <option value="whatsapp">WhatsApp</option>
+                                    <option value="telegram">Telegram</option>
+                                    <option value="substack">Substack</option>
+                                    <option value="patreon">Patreon</option>
+                                    <option value="linktree">Linktree</option>
                                     <option value="walmart">Walmart</option>
                                     <option value="target">Target</option>
+                                    <option value="etsy">Etsy</option>
                                     <option value="shopify">Shopify</option>
                                   </select>
                                 </label>
@@ -863,10 +928,22 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                         <option value="instagram">Instagram</option>
                         <option value="tiktok">TikTok</option>
                         <option value="youtube">YouTube</option>
+                        <option value="x">X / Twitter</option>
+                        <option value="threads">Threads</option>
                         <option value="facebook">Facebook</option>
                         <option value="pinterest">Pinterest</option>
+                        <option value="linkedin">LinkedIn</option>
+                        <option value="snapchat">Snapchat</option>
+                        <option value="twitch">Twitch</option>
+                        <option value="discord">Discord</option>
+                        <option value="whatsapp">WhatsApp</option>
+                        <option value="telegram">Telegram</option>
+                        <option value="substack">Substack</option>
+                        <option value="patreon">Patreon</option>
+                        <option value="linktree">Linktree</option>
                         <option value="walmart">Walmart</option>
                         <option value="target">Target</option>
+                        <option value="etsy">Etsy</option>
                         <option value="shopify">Shopify</option>
                       </select>
                     </label>
