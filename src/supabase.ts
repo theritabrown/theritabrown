@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import type { BioLink, Product, ProductCollection, Profile } from './types'
+import { normalizeUrl } from './url'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
@@ -61,7 +62,7 @@ export async function createBioLink(link: Omit<BioLink, 'id' | 'sortOrder' | 'is
   const { error } = await supabase.from('bio_links').insert({
     label: link.label,
     description: link.description,
-    href: link.href,
+    href: normalizeUrl(link.href),
     kind: link.kind,
     icon: link.icon,
     collection_slug: link.collectionSlug || null,
@@ -106,7 +107,7 @@ export async function updateBioLink(link: BioLink) {
   const update = {
     label: link.label,
     description: link.description,
-    href: link.href,
+    href: normalizeUrl(link.href),
     kind: link.kind,
     icon: link.icon,
     collection_slug: link.collectionSlug || null,
@@ -169,7 +170,7 @@ export async function createProduct(product: Omit<Product, 'id' | 'sortOrder' | 
       store_name: product.storeName,
       price: product.price,
       image_url: product.imageUrl,
-      href: product.href,
+      href: normalizeUrl(product.href),
       category: product.category,
       is_favorite: product.isFavorite,
       is_active: true,
@@ -197,7 +198,7 @@ export async function updateProduct(product: Product) {
       store_name: product.storeName,
       price: product.price,
       image_url: product.imageUrl,
-      href: product.href,
+      href: normalizeUrl(product.href),
       category: product.category,
       is_favorite: product.isFavorite,
       is_active: product.isActive,

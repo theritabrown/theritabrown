@@ -36,6 +36,7 @@ import {
 } from './supabase'
 import { applyTheme, themes } from './themes'
 import type { AdminDraft, BioLink, Product, ProductCollection, ProductMetadata, Profile } from './types'
+import { normalizeUrl } from './url'
 
 type SiteData = {
   profile: Profile
@@ -482,9 +483,10 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
     }
     setIsImporting(true)
     setSaveMessage('Reading product page...')
+    const normalizedImportUrl = normalizeUrl(importUrl)
 
     try {
-      const response = await fetch(`/.netlify/functions/extract-product?url=${encodeURIComponent(importUrl)}`)
+      const response = await fetch(`/.netlify/functions/extract-product?url=${encodeURIComponent(normalizedImportUrl)}`)
       const metadata = (await response.json()) as ProductMetadata
 
       if (!response.ok) {
@@ -494,7 +496,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
       setProductDraft((current) => ({
         ...current,
         title: metadata.title || current.title,
-        href: metadata.url || importUrl,
+        href: normalizeUrl(metadata.url || normalizedImportUrl),
         price: metadata.price || current.price,
         imageUrl: metadata.imageUrl || current.imageUrl,
         storeName: metadata.storeName || current.storeName,
