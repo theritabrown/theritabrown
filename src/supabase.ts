@@ -16,6 +16,14 @@ export const supabase = hasSupabaseConfig
     })
   : null
 
+const legacyLinkHrefById: Record<string, string> = {
+  'walmart-edit': 'https://walmrt.us',
+  'shop-finds': '/store/shop-my-finds',
+  'amazon-storefront': 'https://www.amazon.com/shop/ritabrown',
+  instagram: 'https://www.instagram.com/ritabrowne',
+  tiktok: 'https://www.tiktok.com/@ritabrowne',
+}
+
 export async function loadSiteData() {
   if (!supabase) {
     return null
@@ -107,11 +115,18 @@ export async function updateBioLink(link: BioLink) {
     updated_at: new Date().toISOString(),
   }
 
-  const query = supabase.from('bio_links').update(update)
-  const { error } = isUuid(link.id) ? await query.eq('id', link.id) : await query.eq('href', link.href)
+  const query = supabase.from('bio_links').update(update).select('id')
+  const lookupHref = legacyLinkHrefById[link.id] ?? link.href
+  const { data, error } = isUuid(link.id)
+    ? await query.eq('id', link.id)
+    : await query.eq('href', lookupHref)
 
   if (error) {
     throw error
+  }
+
+  if (!data.length) {
+    throw new Error(`No Supabase link row matched "${link.label}". Refresh and try again.`)
   }
 }
 
@@ -120,11 +135,18 @@ export async function deleteBioLink(link: BioLink) {
     throw new Error('Supabase is not configured yet.')
   }
 
-  const query = supabase.from('bio_links').delete()
-  const { error } = isUuid(link.id) ? await query.eq('id', link.id) : await query.eq('href', link.href)
+  const query = supabase.from('bio_links').delete().select('id')
+  const lookupHref = legacyLinkHrefById[link.id] ?? link.href
+  const { data, error } = isUuid(link.id)
+    ? await query.eq('id', link.id)
+    : await query.eq('href', lookupHref)
 
   if (error) {
     throw error
+  }
+
+  if (!data.length) {
+    throw new Error(`No Supabase link row matched "${link.label}". Refresh and try again.`)
   }
 }
 
