@@ -484,6 +484,10 @@
   box-shadow: 0 18px 54px rgba(54, 43, 34, 0.1);
 }
 
+.admin-panel-wide {
+  grid-column: 1 / -1;
+}
+
 .auth-panel,
 .admin-preview {
   max-width: 680px;

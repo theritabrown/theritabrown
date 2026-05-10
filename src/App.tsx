@@ -24,6 +24,7 @@ import {
   hasSupabaseConfig,
   loadSiteData,
   supabase,
+  updateProfile,
 } from './supabase'
 import type { AdminDraft, BioLink, Product, ProductCollection, ProductMetadata, Profile } from './types'
 
@@ -326,6 +327,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
   const [password, setPassword] = useState('')
   const [isSignedIn, setIsSignedIn] = useState(usingDemoData)
   const [authMessage, setAuthMessage] = useState(usingDemoData ? 'Preview admin enabled until Supabase is connected.' : '')
+  const [profileDraft, setProfileDraft] = useState(data.profile)
   const [linkDraft, setLinkDraft] = useState<AdminDraft>(blankLinkDraft)
   const [productDraft, setProductDraft] = useState(blankProductDraft)
   const [importUrl, setImportUrl] = useState('')
@@ -368,6 +370,17 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
       setSaveMessage('Link saved. Refresh to see live content.')
     } catch (error) {
       setSaveMessage(error instanceof Error ? error.message : 'Could not save link yet.')
+    }
+  }
+
+  async function saveProfile(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSaveMessage('Saving profile...')
+    try {
+      await updateProfile(profileDraft)
+      setSaveMessage('Profile saved. Refresh to see live content.')
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? error.message : 'Could not save profile yet.')
     }
   }
 
@@ -451,6 +464,77 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
         </form>
       ) : (
         <div className="admin-grid">
+          <form className="admin-panel admin-panel-wide" onSubmit={saveProfile}>
+            <div className="panel-title">
+              <Camera size={20} />
+              <h2>Edit profile</h2>
+            </div>
+            <div className="field-row">
+              <label>
+                Name
+                <input
+                  value={profileDraft.name}
+                  onChange={(event) => setProfileDraft({ ...profileDraft, name: event.target.value })}
+                  required
+                />
+              </label>
+              <label>
+                Handle
+                <input
+                  value={profileDraft.handle}
+                  onChange={(event) => setProfileDraft({ ...profileDraft, handle: event.target.value })}
+                  required
+                />
+              </label>
+            </div>
+            <label>
+              Tagline
+              <input
+                value={profileDraft.tagline}
+                onChange={(event) => setProfileDraft({ ...profileDraft, tagline: event.target.value })}
+                required
+              />
+            </label>
+            <label>
+              Bio
+              <textarea
+                value={profileDraft.bio}
+                onChange={(event) => setProfileDraft({ ...profileDraft, bio: event.target.value })}
+                required
+              />
+            </label>
+            <div className="field-row">
+              <label>
+                Avatar image URL
+                <input
+                  value={profileDraft.avatarUrl}
+                  onChange={(event) => setProfileDraft({ ...profileDraft, avatarUrl: event.target.value })}
+                  required
+                />
+              </label>
+              <label>
+                Hero image URL
+                <input
+                  value={profileDraft.heroImageUrl}
+                  onChange={(event) => setProfileDraft({ ...profileDraft, heroImageUrl: event.target.value })}
+                  required
+                />
+              </label>
+            </div>
+            <label>
+              Location / descriptor
+              <input
+                value={profileDraft.location}
+                onChange={(event) => setProfileDraft({ ...profileDraft, location: event.target.value })}
+                required
+              />
+            </label>
+            <button className="primary-button" type="submit">
+              <Check size={17} />
+              Save profile
+            </button>
+          </form>
+
           <form className="admin-panel" onSubmit={addLink}>
             <div className="panel-title">
               <LinkIcon size={20} />

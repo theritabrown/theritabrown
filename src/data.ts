@@ -47,8 +47,8 @@ export const bioLinks: BioLink[] = [
   },
   {
     id: 'instagram',
-    label: 'My Insta Moments',
-    description: 'Follow along on Instagram.',
+    label: 'Instagram',
+    description: 'Follow Rita on Instagram.',
     href: 'https://www.instagram.com/ritabrowne',
     kind: 'social',
     icon: 'instagram',

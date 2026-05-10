@@ -134,7 +134,7 @@ values
   ('The Rita Brown Edit', 'Walmart storefront with cozy home and lifestyle picks.', 'https://walmrt.us', 'feature', 'sparkles', null, 1),
   ('Shop My Finds', 'A curated storefront for products from any shop.', '/store/shop-my-finds', 'storefront', 'shopping-bag', 'shop-my-finds', 2),
   ('Amazon Storefront', 'Recommended products from Rita Brown on Amazon.', 'https://www.amazon.com/shop/ritabrown', 'standard', 'store', null, 3),
-  ('My Insta Moments', 'Follow along on Instagram.', 'https://www.instagram.com/ritabrowne', 'social', 'instagram', null, 4),
+  ('Instagram', 'Follow Rita on Instagram.', 'https://www.instagram.com/ritabrowne', 'social', 'instagram', null, 4),
   ('Hi TikTok', 'Short videos, finds, and daily favorites.', 'https://www.tiktok.com/@ritabrowne', 'social', 'music', null, 5);
 
 insert into public.products (

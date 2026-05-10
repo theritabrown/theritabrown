@@ -65,6 +65,30 @@ export async function createBioLink(link: Omit<BioLink, 'id' | 'sortOrder' | 'is
   }
 }
 
+export async function updateProfile(profile: Profile) {
+  if (!supabase) {
+    throw new Error('Supabase is not configured yet.')
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      name: profile.name,
+      handle: profile.handle,
+      tagline: profile.tagline,
+      bio: profile.bio,
+      avatar_url: profile.avatarUrl,
+      hero_image_url: profile.heroImageUrl,
+      location: profile.location,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', profile.id)
+
+  if (error) {
+    throw error
+  }
+}
+
 export async function createProduct(product: Omit<Product, 'id' | 'sortOrder' | 'isActive'>) {
   if (!supabase) {
     throw new Error('Supabase is not configured yet.')
