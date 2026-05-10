@@ -12,7 +12,6 @@ import {
   EyeOff,
   Link as LinkIcon,
   Loader2,
-  Music2,
   Palette,
   Plus,
   ShoppingBag,
@@ -20,6 +19,16 @@ import {
   Store,
   Trash2,
 } from 'lucide-react'
+import {
+  SiFacebook,
+  SiInstagram,
+  SiPinterest,
+  SiShopify,
+  SiTarget,
+  SiTiktok,
+  SiWalmart,
+  SiYoutube,
+} from 'react-icons/si'
 import './App.css'
 import { bioLinks as demoLinks, collections as demoCollections, products as demoProducts, profile as demoProfile } from './data'
 import {
@@ -75,10 +84,40 @@ const iconMap = {
   sparkles: Sparkles,
   'shopping-bag': ShoppingBag,
   store: Store,
-  instagram: Camera,
-  music: Music2,
+  instagram: SiInstagram,
+  tiktok: SiTiktok,
+  music: SiTiktok,
+  youtube: SiYoutube,
+  facebook: SiFacebook,
+  pinterest: SiPinterest,
+  walmart: SiWalmart,
+  target: SiTarget,
+  shopify: SiShopify,
   home: Home,
   link: LinkIcon,
+}
+
+function getLinkIconKey(link: Pick<BioLink, 'href' | 'icon'>) {
+  const href = link.href.toLowerCase()
+
+  if (href.includes('instagram.com')) return 'instagram'
+  if (href.includes('tiktok.com')) return 'tiktok'
+  if (href.includes('youtube.com') || href.includes('youtu.be')) return 'youtube'
+  if (href.includes('facebook.com') || href.includes('fb.com')) return 'facebook'
+  if (href.includes('pinterest.com')) return 'pinterest'
+  if (href.includes('walmart.com') || href.includes('walmrt.us')) return 'walmart'
+  if (href.includes('target.com')) return 'target'
+  if (href.includes('shopify.com') || href.includes('myshopify.com')) return 'shopify'
+
+  return link.icon in iconMap ? link.icon : 'link'
+}
+
+function LinkIconGlyph({ link, size }: { link: Pick<BioLink, 'href' | 'icon'>; size: number }) {
+  const iconKey = getLinkIconKey(link)
+  const Icon = iconMap[iconKey as keyof typeof iconMap] ?? LinkIcon
+  const iconSize = iconKey === 'walmart' ? Math.round(size * 1.45) : size
+
+  return <Icon size={iconSize} />
 }
 
 const blankLinkDraft: AdminDraft = {
@@ -198,8 +237,8 @@ function PublicHome({
 }) {
   const featuredCollection = data.collections[0]
   const featuredProducts = data.products.filter((product) => product.isActive).slice(0, 4)
-  const instagramLink = data.links.find((link) => link.isActive && link.icon === 'instagram')
-  const tiktokLink = data.links.find((link) => link.isActive && link.icon === 'music')
+  const instagramLink = data.links.find((link) => link.isActive && (link.icon === 'instagram' || link.href.includes('instagram.com')))
+  const tiktokLink = data.links.find((link) => link.isActive && (link.icon === 'tiktok' || link.icon === 'music' || link.href.includes('tiktok.com')))
 
   return (
     <main className="site-shell home-screen">
@@ -220,12 +259,12 @@ function PublicHome({
           <div className="social-row" aria-label="Social links">
             {instagramLink ? (
               <a href={instagramLink.href} target="_blank" rel="noreferrer" aria-label="Instagram">
-                <Camera size={18} />
+                <SiInstagram size={18} />
               </a>
             ) : null}
             {tiktokLink ? (
               <a href={tiktokLink.href} target="_blank" rel="noreferrer" aria-label="TikTok">
-                <Music2 size={18} />
+                <SiTiktok size={18} />
               </a>
             ) : null}
             <a href="/admin" aria-label="Admin">
@@ -268,7 +307,6 @@ function PublicHome({
 }
 
 function BioLinkCard({ link, index }: { link: BioLink; index: number }) {
-  const Icon = iconMap[link.icon as keyof typeof iconMap] ?? LinkIcon
   const isInternal = link.href.startsWith('/')
 
   return (
@@ -280,7 +318,7 @@ function BioLinkCard({ link, index }: { link: BioLink; index: number }) {
       style={{ animationDelay: `${120 + index * 70}ms` }}
     >
       <span className="link-icon">
-        <Icon size={20} />
+        <LinkIconGlyph link={link} size={20} />
       </span>
       <span className="link-copy">
         <strong>{link.label}</strong>
@@ -682,13 +720,12 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                   .sort((a, b) => a.sortOrder - b.sortOrder)
                   .map((link) => {
                     const isEditing = editingLinkId === link.id
-                    const Icon = iconMap[link.icon as keyof typeof iconMap] ?? LinkIcon
 
                     return (
                       <article key={link.id} className={`link-row ${link.isActive ? '' : 'is-hidden'}`}>
                         <div className="link-row-summary">
                           <span className="link-row-icon">
-                            <Icon size={18} />
+                            <LinkIconGlyph link={link} size={18} />
                           </span>
                           <div>
                             <strong>{link.label || 'Untitled link'}</strong>
@@ -747,7 +784,13 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                                     <option value="sparkles">Sparkles</option>
                                     <option value="store">Store</option>
                                     <option value="instagram">Instagram</option>
-                                    <option value="music">Music</option>
+                                    <option value="tiktok">TikTok</option>
+                                    <option value="youtube">YouTube</option>
+                                    <option value="facebook">Facebook</option>
+                                    <option value="pinterest">Pinterest</option>
+                                    <option value="walmart">Walmart</option>
+                                    <option value="target">Target</option>
+                                    <option value="shopify">Shopify</option>
                                   </select>
                                 </label>
                               </div>
@@ -818,7 +861,13 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                         <option value="sparkles">Sparkles</option>
                         <option value="store">Store</option>
                         <option value="instagram">Instagram</option>
-                        <option value="music">Music</option>
+                        <option value="tiktok">TikTok</option>
+                        <option value="youtube">YouTube</option>
+                        <option value="facebook">Facebook</option>
+                        <option value="pinterest">Pinterest</option>
+                        <option value="walmart">Walmart</option>
+                        <option value="target">Target</option>
+                        <option value="shopify">Shopify</option>
                       </select>
                     </label>
                   </div>
