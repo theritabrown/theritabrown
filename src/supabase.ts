@@ -115,7 +115,7 @@ export async function updateBioLink(link: BioLink) {
     updated_at: new Date().toISOString(),
   }
 
-  const query = supabase.from('bio_links').update(update).select('id')
+  const query = supabase.from('bio_links').update(update).select('*')
   const lookupHref = legacyLinkHrefById[link.id] ?? link.href
   const { data, error } = isUuid(link.id)
     ? await query.eq('id', link.id)
@@ -128,6 +128,8 @@ export async function updateBioLink(link: BioLink) {
   if (!data.length) {
     throw new Error(`No Supabase link row matched "${link.label}". Refresh and try again.`)
   }
+
+  return mapBioLink(data[0])
 }
 
 export async function deleteBioLink(link: BioLink) {

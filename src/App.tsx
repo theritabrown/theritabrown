@@ -151,6 +151,8 @@ function PublicHome({
 }) {
   const featuredCollection = data.collections[0]
   const featuredProducts = data.products.slice(0, 4)
+  const instagramLink = data.links.find((link) => link.isActive && link.icon === 'instagram')
+  const tiktokLink = data.links.find((link) => link.isActive && link.icon === 'music')
 
   return (
     <main className="site-shell home-screen">
@@ -169,12 +171,16 @@ function PublicHome({
           <p className="handle">{data.profile.handle}</p>
           <p className="bio">{data.profile.tagline}</p>
           <div className="social-row" aria-label="Social links">
-            <a href="https://www.instagram.com/ritabrowne" target="_blank" rel="noreferrer" aria-label="Instagram">
-              <Camera size={18} />
-            </a>
-            <a href="https://www.tiktok.com/@ritabrowne" target="_blank" rel="noreferrer" aria-label="TikTok">
-              <Music2 size={18} />
-            </a>
+            {instagramLink ? (
+              <a href={instagramLink.href} target="_blank" rel="noreferrer" aria-label="Instagram">
+                <Camera size={18} />
+              </a>
+            ) : null}
+            {tiktokLink ? (
+              <a href={tiktokLink.href} target="_blank" rel="noreferrer" aria-label="TikTok">
+                <Music2 size={18} />
+              </a>
+            ) : null}
             <a href="/admin" aria-label="Admin">
               <Store size={18} />
             </a>
@@ -394,8 +400,9 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
   async function saveExistingLink(link: BioLink) {
     setSaveMessage(`Saving ${link.label}...`)
     try {
-      await updateBioLink(link)
-      setSaveMessage(`${link.label} saved.`)
+      const savedLink = await updateBioLink(link)
+      setLinkEdits((current) => current.map((item) => (item.id === link.id ? savedLink : item)))
+      setSaveMessage(`${savedLink.label} saved.`)
     } catch (error) {
       setSaveMessage(error instanceof Error ? error.message : 'Could not save link.')
     }
