@@ -410,7 +410,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
 
     setSaveMessage(`Deleting ${link.label}...`)
     try {
-      await deleteBioLink(link.id)
+      await deleteBioLink(link)
       setLinkEdits((current) => current.filter((item) => item.id !== link.id))
       setSaveMessage(`${link.label} deleted.`)
     } catch (error) {

@@ -95,36 +95,41 @@ export async function updateBioLink(link: BioLink) {
     throw new Error('Supabase is not configured yet.')
   }
 
-  const { error } = await supabase
-    .from('bio_links')
-    .update({
-      label: link.label,
-      description: link.description,
-      href: link.href,
-      kind: link.kind,
-      icon: link.icon,
-      collection_slug: link.collectionSlug || null,
-      is_active: link.isActive,
-      sort_order: link.sortOrder,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', link.id)
+  const update = {
+    label: link.label,
+    description: link.description,
+    href: link.href,
+    kind: link.kind,
+    icon: link.icon,
+    collection_slug: link.collectionSlug || null,
+    is_active: link.isActive,
+    sort_order: link.sortOrder,
+    updated_at: new Date().toISOString(),
+  }
+
+  const query = supabase.from('bio_links').update(update)
+  const { error } = isUuid(link.id) ? await query.eq('id', link.id) : await query.eq('href', link.href)
 
   if (error) {
     throw error
   }
 }
 
-export async function deleteBioLink(id: string) {
+export async function deleteBioLink(link: BioLink) {
   if (!supabase) {
     throw new Error('Supabase is not configured yet.')
   }
 
-  const { error } = await supabase.from('bio_links').delete().eq('id', id)
+  const query = supabase.from('bio_links').delete()
+  const { error } = isUuid(link.id) ? await query.eq('id', link.id) : await query.eq('href', link.href)
 
   if (error) {
     throw error
   }
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 }
 
 export async function createProduct(product: Omit<Product, 'id' | 'sortOrder' | 'isActive'>) {
