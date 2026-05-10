@@ -56,10 +56,18 @@ create table if not exists public.products (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.keep_alive_pings (
+  id uuid primary key default gen_random_uuid(),
+  source text not null default 'netlify-schedule',
+  note text not null default '',
+  created_at timestamptz not null default now()
+);
+
 alter table public.profiles enable row level security;
 alter table public.product_collections enable row level security;
 alter table public.bio_links enable row level security;
 alter table public.products enable row level security;
+alter table public.keep_alive_pings enable row level security;
 
 drop policy if exists "Public can read profile" on public.profiles;
 create policy "Public can read profile" on public.profiles
@@ -92,6 +100,35 @@ create policy "Authenticated users manage links" on public.bio_links
 drop policy if exists "Authenticated users manage products" on public.products;
 create policy "Authenticated users manage products" on public.products
   for all to authenticated using (true) with check (true);
+
+drop policy if exists "Authenticated users read keep alive pings" on public.keep_alive_pings;
+create policy "Authenticated users read keep alive pings" on public.keep_alive_pings
+  for select to authenticated using (true);
+
+create or replace function public.record_keep_alive(
+  heartbeat_source text default 'netlify-schedule',
+  heartbeat_note text default ''
+) returns timestamptz
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  ping_time timestamptz;
+begin
+  insert into public.keep_alive_pings (source, note)
+  values (
+    coalesce(nullif(heartbeat_source, ''), 'netlify-schedule'),
+    coalesce(heartbeat_note, '')
+  )
+  returning created_at into ping_time;
+
+  delete from public.keep_alive_pings
+  where created_at < now() - interval '45 days';
+
+  return ping_time;
+end;
+$$;
 
 insert into public.profiles (
   id,
