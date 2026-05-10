@@ -726,6 +726,18 @@
   white-space: nowrap;
 }
 
+.product-row-summary {
+  grid-template-columns: 58px minmax(0, 1fr) auto auto;
+}
+
+.product-row-image {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  object-fit: cover;
+  background: var(--panel-strong);
+}
+
 .visibility-button {
   display: inline-flex;
   align-items: center;
@@ -1127,6 +1139,15 @@
 
   .link-row-icon {
     display: none;
+  }
+
+  .product-row-summary {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .product-row-image {
+    width: 72px;
+    height: 72px;
   }
 
   .visibility-button,

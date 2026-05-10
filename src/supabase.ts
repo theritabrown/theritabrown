@@ -33,7 +33,7 @@ export async function loadSiteData() {
     supabase.from('profiles').select('*').eq('id', 'rita-brown').single(),
     supabase.from('bio_links').select('*').order('sort_order'),
     supabase.from('product_collections').select('*').eq('is_active', true).order('created_at'),
-    supabase.from('products').select('*').eq('is_active', true).order('sort_order'),
+    supabase.from('products').select('*').order('sort_order'),
   ])
 
   if (
@@ -161,17 +161,66 @@ export async function createProduct(product: Omit<Product, 'id' | 'sortOrder' | 
     throw new Error('Supabase is not configured yet.')
   }
 
-  const { error } = await supabase.from('products').insert({
-    collection_slug: product.collectionSlug,
-    title: product.title,
-    store_name: product.storeName,
-    price: product.price,
-    image_url: product.imageUrl,
-    href: product.href,
-    category: product.category,
-    is_favorite: product.isFavorite,
-    is_active: true,
-  })
+  const { data, error } = await supabase
+    .from('products')
+    .insert({
+      collection_slug: product.collectionSlug,
+      title: product.title,
+      store_name: product.storeName,
+      price: product.price,
+      image_url: product.imageUrl,
+      href: product.href,
+      category: product.category,
+      is_favorite: product.isFavorite,
+      is_active: true,
+    })
+    .select('*')
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapProduct(data)
+}
+
+export async function updateProduct(product: Product) {
+  if (!supabase) {
+    throw new Error('Supabase is not configured yet.')
+  }
+
+  const { data, error } = await supabase
+    .from('products')
+    .update({
+      collection_slug: product.collectionSlug,
+      title: product.title,
+      store_name: product.storeName,
+      price: product.price,
+      image_url: product.imageUrl,
+      href: product.href,
+      category: product.category,
+      is_favorite: product.isFavorite,
+      is_active: product.isActive,
+      sort_order: product.sortOrder,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', product.id)
+    .select('*')
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapProduct(data)
+}
+
+export async function deleteProduct(product: Product) {
+  if (!supabase) {
+    throw new Error('Supabase is not configured yet.')
+  }
+
+  const { error } = await supabase.from('products').delete().eq('id', product.id)
 
   if (error) {
     throw error
@@ -217,7 +266,7 @@ function mapCollection(row: Record<string, string | boolean>): ProductCollection
   }
 }
 
-function mapProduct(row: Record<string, string | boolean | number>): Product {
+function mapProduct(row: Record<string, string | boolean | number | null>): Product {
   return {
     id: String(row.id),
     collectionSlug: String(row.collection_slug),

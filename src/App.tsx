@@ -25,11 +25,13 @@ import { bioLinks as demoLinks, collections as demoCollections, products as demo
 import {
   createBioLink,
   createProduct,
+  deleteProduct,
   hasSupabaseConfig,
   loadSiteData,
   supabase,
   deleteBioLink,
   updateBioLink,
+  updateProduct,
   updateProfile,
 } from './supabase'
 import { applyTheme, themes } from './themes'
@@ -170,7 +172,7 @@ function PublicHome({
   usingDemoData: boolean
 }) {
   const featuredCollection = data.collections[0]
-  const featuredProducts = data.products.slice(0, 4)
+  const featuredProducts = data.products.filter((product) => product.isActive).slice(0, 4)
   const instagramLink = data.links.find((link) => link.isActive && link.icon === 'instagram')
   const tiktokLink = data.links.find((link) => link.isActive && link.icon === 'music')
 
@@ -278,7 +280,7 @@ function Storefront({
   profile: Profile
 }) {
   const collection = collections.find((item) => item.slug === collectionSlug) ?? collections[0]
-  const collectionProducts = products.filter((product) => product.collectionSlug === collection?.slug)
+  const collectionProducts = products.filter((product) => product.isActive && product.collectionSlug === collection?.slug)
   const [activeCategory, setActiveCategory] = useState('All')
   const categories = useMemo(
     () => ['All', ...Array.from(new Set(collectionProducts.map((product) => product.category)))],
@@ -372,8 +374,10 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
   const [authMessage, setAuthMessage] = useState(usingDemoData ? 'Preview admin enabled until Supabase is connected.' : '')
   const [profileDraft, setProfileDraft] = useState(data.profile)
   const [linkEdits, setLinkEdits] = useState(data.links)
+  const [productEdits, setProductEdits] = useState(data.products)
   const [activeTab, setActiveTab] = useState<AdminTab>('links')
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null)
+  const [editingProductId, setEditingProductId] = useState<string | null>(null)
   const [linkDraft, setLinkDraft] = useState<AdminDraft>(blankLinkDraft)
   const [productDraft, setProductDraft] = useState(blankProductDraft)
   const [importUrl, setImportUrl] = useState('')
@@ -468,6 +472,10 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
     setLinkEdits((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)))
   }
 
+  function updateProductDraft(id: string, patch: Partial<Product>) {
+    setProductEdits((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)))
+  }
+
   async function importProduct() {
     if (!importUrl) {
       return
@@ -503,12 +511,43 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
     event.preventDefault()
     setSaveMessage('Saving product...')
     try {
-      await createProduct(productDraft)
+      const savedProduct = await createProduct(productDraft)
+      setProductEdits((current) => [...current, savedProduct].sort((a, b) => a.sortOrder - b.sortOrder))
+      setEditingProductId(savedProduct.id)
       setProductDraft(blankProductDraft)
       setImportUrl('')
-      setSaveMessage('Product saved. Refresh to see live content.')
+      setSaveMessage(`${savedProduct.title} saved.`)
     } catch (error) {
       setSaveMessage(error instanceof Error ? error.message : 'Could not save product yet.')
+    }
+  }
+
+  async function saveExistingProduct(product: Product) {
+    setSaveMessage(`Saving ${product.title}...`)
+    try {
+      const savedProduct = await updateProduct(product)
+      setProductEdits((current) => current.map((item) => (item.id === product.id ? savedProduct : item)))
+      setEditingProductId(savedProduct.id)
+      setSaveMessage(`${savedProduct.title} saved.`)
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? error.message : 'Could not save product.')
+    }
+  }
+
+  async function removeExistingProduct(product: Product) {
+    const confirmed = window.confirm(`Delete "${product.title}"? Hiding is safer if you may need it later.`)
+
+    if (!confirmed) {
+      return
+    }
+
+    setSaveMessage(`Deleting ${product.title}...`)
+    try {
+      await deleteProduct(product)
+      setProductEdits((current) => current.filter((item) => item.id !== product.id))
+      setSaveMessage(`${product.title} deleted.`)
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? error.message : 'Could not delete product.')
     }
   }
 
@@ -760,10 +799,125 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                 <div>
                   <p className="small-label">Storefront</p>
                   <h2>Products</h2>
-                  <p>Paste a product link first. Review the imported details, then save the card.</p>
+                  <p>Edit saved products, hide old picks, or paste a new product link to create another card.</p>
                 </div>
               </div>
+              <div className="link-manager compact">
+                {productEdits
+                  .slice()
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .map((product) => (
+                    <article key={product.id} className={`link-row ${product.isActive ? '' : 'is-hidden'}`}>
+                      <div className="link-row-summary product-row-summary">
+                        {product.imageUrl ? (
+                          <img className="product-row-image" src={product.imageUrl} alt="" />
+                        ) : (
+                          <span className="link-row-icon">
+                            <ShoppingBag size={20} />
+                          </span>
+                        )}
+                        <div>
+                          <strong>{product.title || 'Untitled product'}</strong>
+                          <span>{product.storeName} {product.price ? `/ ${product.price}` : ''}</span>
+                        </div>
+                        <button
+                          type="button"
+                          className="visibility-button"
+                          onClick={() => updateProductDraft(product.id, { isActive: !product.isActive })}
+                        >
+                          {product.isActive ? <Eye size={15} /> : <EyeOff size={15} />}
+                          {product.isActive ? 'Visible' : 'Hidden'}
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          onClick={() => setEditingProductId(editingProductId === product.id ? null : product.id)}
+                        >
+                          Edit
+                        </button>
+                      </div>
+                      {editingProductId === product.id ? (
+                        <form className="link-edit-form" onSubmit={(event) => {
+                          event.preventDefault()
+                          void saveExistingProduct(product)
+                        }}>
+                          <div className="field-row">
+                            <label>
+                              Product title
+                              <input value={product.title} onChange={(event) => updateProductDraft(product.id, { title: event.target.value })} required />
+                            </label>
+                            <label>
+                              Store
+                              <input value={product.storeName} onChange={(event) => updateProductDraft(product.id, { storeName: event.target.value })} required />
+                            </label>
+                          </div>
+                          <div className="field-row">
+                            <label>
+                              Price
+                              <input value={product.price} onChange={(event) => updateProductDraft(product.id, { price: event.target.value })} />
+                            </label>
+                            <label>
+                              Category
+                              <input value={product.category} onChange={(event) => updateProductDraft(product.id, { category: event.target.value })} />
+                            </label>
+                          </div>
+                          <details className="advanced-settings">
+                            <summary>Advanced settings</summary>
+                            <label>
+                              Image URL
+                              <input value={product.imageUrl} onChange={(event) => updateProductDraft(product.id, { imageUrl: event.target.value })} required />
+                            </label>
+                            <label>
+                              Product URL
+                              <input value={product.href} onChange={(event) => updateProductDraft(product.id, { href: event.target.value })} required />
+                            </label>
+                            <div className="field-row">
+                              <label>
+                                Collection
+                                <select value={product.collectionSlug} onChange={(event) => updateProductDraft(product.id, { collectionSlug: event.target.value })}>
+                                  {data.collections.map((collection) => (
+                                    <option key={collection.slug} value={collection.slug}>
+                                      {collection.title}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label>
+                                Display order
+                                <input
+                                  type="number"
+                                  value={product.sortOrder}
+                                  onChange={(event) => updateProductDraft(product.id, { sortOrder: Number(event.target.value) })}
+                                />
+                              </label>
+                            </div>
+                            <label className="checkbox-label">
+                              <input
+                                type="checkbox"
+                                checked={product.isFavorite}
+                                onChange={(event) => updateProductDraft(product.id, { isFavorite: event.target.checked })}
+                              />
+                              Mark as Rita pick
+                            </label>
+                            <button type="button" className="danger-button" onClick={() => removeExistingProduct(product)}>
+                              <Trash2 size={15} />
+                              Delete permanently
+                            </button>
+                          </details>
+                          <button className="primary-button" type="submit">
+                            <Check size={17} />
+                            Save changes
+                          </button>
+                        </form>
+                      ) : null}
+                    </article>
+                  ))}
+              </div>
               <form className="admin-panel product-builder" onSubmit={addProduct}>
+                <div className="panel-title">
+                  <Plus size={20} />
+                  <h2>Add a new product</h2>
+                </div>
                 <div className="import-box primary-import">
                   <input
                     value={importUrl}
@@ -839,11 +993,6 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                   Save product
                 </button>
               </form>
-              <div className="product-admin-grid">
-                {data.products.map((product) => (
-                  <ProductCard key={product.id} product={product} compact />
-                ))}
-              </div>
             </section>
           ) : null}
 
