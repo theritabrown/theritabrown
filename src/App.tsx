@@ -42,6 +42,8 @@ type SiteData = {
   products: Product[]
 }
 
+type AdminTab = 'links' | 'products' | 'profile' | 'appearance'
+
 const iconMap = {
   sparkles: Sparkles,
   'shopping-bag': ShoppingBag,
@@ -370,6 +372,8 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
   const [authMessage, setAuthMessage] = useState(usingDemoData ? 'Preview admin enabled until Supabase is connected.' : '')
   const [profileDraft, setProfileDraft] = useState(data.profile)
   const [linkEdits, setLinkEdits] = useState(data.links)
+  const [activeTab, setActiveTab] = useState<AdminTab>('links')
+  const [editingLinkId, setEditingLinkId] = useState<string | null>(null)
   const [linkDraft, setLinkDraft] = useState<AdminDraft>(blankLinkDraft)
   const [productDraft, setProductDraft] = useState(blankProductDraft)
   const [importUrl, setImportUrl] = useState('')
@@ -420,6 +424,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
     try {
       const savedLink = await updateBioLink(link)
       setLinkEdits((current) => current.map((item) => (item.id === link.id ? savedLink : item)))
+      setEditingLinkId(savedLink.id)
       setSaveMessage(`${savedLink.label} saved.`)
     } catch (error) {
       setSaveMessage(error instanceof Error ? error.message : 'Could not save link.')
@@ -443,8 +448,8 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
     }
   }
 
-  async function saveProfile(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  async function saveProfile(event?: { preventDefault: () => void }) {
+    event?.preventDefault()
     setSaveMessage('Saving profile...')
     try {
       await updateProfile(profileDraft)
@@ -457,6 +462,10 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
   function previewTheme(themeSlug: string) {
     setProfileDraft({ ...profileDraft, themeSlug })
     applyTheme(themeSlug)
+  }
+
+  function updateLinkDraft(id: string, patch: Partial<BioLink>) {
+    setLinkEdits((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)))
   }
 
   async function importProduct() {
@@ -513,7 +522,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
         <div>
           <p className="small-label">Rita Brown admin</p>
           <h1>Links and storefront</h1>
-          <p>Add Linktree-style buttons and product cards from any shop URL.</p>
+          <p>Manage what visitors see without touching code or database settings.</p>
         </div>
       </header>
 
@@ -538,412 +547,419 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
           {authMessage ? <p className="form-message">{authMessage}</p> : null}
         </form>
       ) : (
-        <div className="admin-grid">
-          <form className="admin-panel admin-panel-wide" onSubmit={saveProfile}>
-            <div className="panel-title">
-              <Camera size={20} />
-              <h2>Edit profile</h2>
-            </div>
-            <div className="field-row">
-              <label>
-                Name
-                <input
-                  value={profileDraft.name}
-                  onChange={(event) => setProfileDraft({ ...profileDraft, name: event.target.value })}
-                  required
-                />
-              </label>
-              <label>
-                Handle
-                <input
-                  value={profileDraft.handle}
-                  onChange={(event) => setProfileDraft({ ...profileDraft, handle: event.target.value })}
-                  required
-                />
-              </label>
-            </div>
-            <label>
-              Tagline
-              <input
-                value={profileDraft.tagline}
-                onChange={(event) => setProfileDraft({ ...profileDraft, tagline: event.target.value })}
-                required
-              />
-            </label>
-            <label>
-              Bio
-              <textarea
-                value={profileDraft.bio}
-                onChange={(event) => setProfileDraft({ ...profileDraft, bio: event.target.value })}
-                required
-              />
-            </label>
-            <div className="field-row">
-              <label>
-                Avatar image URL
-                <input
-                  value={profileDraft.avatarUrl}
-                  onChange={(event) => setProfileDraft({ ...profileDraft, avatarUrl: event.target.value })}
-                  required
-                />
-              </label>
-              <label>
-                Hero image URL
-                <input
-                  value={profileDraft.heroImageUrl}
-                  onChange={(event) => setProfileDraft({ ...profileDraft, heroImageUrl: event.target.value })}
-                  required
-                />
-              </label>
-            </div>
-            <label>
-              Theme
-              <select
-                value={profileDraft.themeSlug}
-                onChange={(event) => previewTheme(event.target.value)}
-              >
-                {themes.map((theme) => (
-                  <option key={theme.slug} value={theme.slug}>
-                    {theme.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="theme-picker" aria-label="Theme previews">
-              {themes.map((theme) => (
+        <>
+          <nav className="admin-tabs" aria-label="Admin sections">
+            {[
+              { id: 'links' as const, label: 'Links', icon: LinkIcon },
+              { id: 'products' as const, label: 'Products', icon: ShoppingBag },
+              { id: 'profile' as const, label: 'Profile', icon: Camera },
+              { id: 'appearance' as const, label: 'Appearance', icon: Palette },
+            ].map((tab) => {
+              const Icon = tab.icon
+
+              return (
                 <button
                   type="button"
-                  key={theme.slug}
-                  className={theme.slug === profileDraft.themeSlug ? 'active' : ''}
-                  onClick={() => previewTheme(theme.slug)}
+                  key={tab.id}
+                  className={activeTab === tab.id ? 'active' : ''}
+                  onClick={() => setActiveTab(tab.id)}
                 >
-                  <span className="theme-swatch" style={{ background: theme.colors.bodyBg }}>
-                    <i style={{ background: theme.colors.featureBg }} />
-                    <i style={{ background: theme.colors.accent }} />
-                    <i style={{ background: theme.colors.accent3 }} />
-                  </span>
-                  <strong>{theme.name}</strong>
-                  <small>{theme.description}</small>
+                  <Icon size={17} />
+                  {tab.label}
                 </button>
-              ))}
-            </div>
-            <label>
-              Location / descriptor
-              <input
-                value={profileDraft.location}
-                onChange={(event) => setProfileDraft({ ...profileDraft, location: event.target.value })}
-                required
-              />
-            </label>
-            <button className="primary-button" type="submit">
-              <Check size={17} />
-              Save profile
-            </button>
-          </form>
+              )
+            })}
+          </nav>
 
-          <section className="admin-panel admin-panel-wide">
-            <div className="panel-title">
-              <Palette size={20} />
-              <h2>Manage existing links</h2>
+          {saveMessage ? (
+            <div className="admin-status" role="status">
+              {saveMessage}
             </div>
-            <div className="link-manager">
-              {linkEdits
-                .slice()
-                .sort((a, b) => a.sortOrder - b.sortOrder)
-                .map((link) => (
-                  <article key={link.id} className={`link-editor ${link.isActive ? '' : 'is-hidden'}`}>
-                    <div className="link-editor-head">
-                      <div>
-                        <strong>{link.label || 'Untitled link'}</strong>
-                        <span>{link.isActive ? 'Visible on public page' : 'Hidden from public page'}</span>
-                      </div>
+          ) : null}
+
+          {activeTab === 'links' ? (
+            <section className="admin-workspace">
+              <div className="workspace-heading">
+                <div>
+                  <p className="small-label">Most used</p>
+                  <h2>Links</h2>
+                  <p>Edit the buttons visitors see on the public page. Hide a link instead of deleting it if you may need it later.</p>
+                </div>
+                <a href="/" className="ghost-button" target="_blank" rel="noreferrer">
+                  View page
+                  <ExternalLink size={15} />
+                </a>
+              </div>
+
+              <div className="link-manager compact">
+                {linkEdits
+                  .slice()
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .map((link) => {
+                    const isEditing = editingLinkId === link.id
+                    const Icon = iconMap[link.icon as keyof typeof iconMap] ?? LinkIcon
+
+                    return (
+                      <article key={link.id} className={`link-row ${link.isActive ? '' : 'is-hidden'}`}>
+                        <div className="link-row-summary">
+                          <span className="link-row-icon">
+                            <Icon size={18} />
+                          </span>
+                          <div>
+                            <strong>{link.label || 'Untitled link'}</strong>
+                            <span>{link.href}</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="visibility-button"
+                            onClick={() => updateLinkDraft(link.id, { isActive: !link.isActive })}
+                          >
+                            {link.isActive ? <Eye size={16} /> : <EyeOff size={16} />}
+                            {link.isActive ? 'Visible' : 'Hidden'}
+                          </button>
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            onClick={() => setEditingLinkId(isEditing ? null : link.id)}
+                          >
+                            {isEditing ? 'Close' : 'Edit'}
+                          </button>
+                        </div>
+
+                        {isEditing ? (
+                          <div className="link-edit-form">
+                            <div className="field-row">
+                              <label>
+                                Button title
+                                <input value={link.label} onChange={(event) => updateLinkDraft(link.id, { label: event.target.value })} />
+                              </label>
+                              <label>
+                                Link URL
+                                <input value={link.href} onChange={(event) => updateLinkDraft(link.id, { href: event.target.value })} />
+                              </label>
+                            </div>
+                            <label>
+                              Short description
+                              <textarea value={link.description} onChange={(event) => updateLinkDraft(link.id, { description: event.target.value })} />
+                            </label>
+                            <details className="advanced-settings">
+                              <summary>Advanced settings</summary>
+                              <div className="field-row">
+                                <label>
+                                  Button style
+                                  <select value={link.kind} onChange={(event) => updateLinkDraft(link.id, { kind: event.target.value as BioLink['kind'] })}>
+                                    <option value="standard">Standard</option>
+                                    <option value="feature">Featured</option>
+                                    <option value="storefront">Storefront</option>
+                                    <option value="social">Social</option>
+                                  </select>
+                                </label>
+                                <label>
+                                  Icon
+                                  <select value={link.icon} onChange={(event) => updateLinkDraft(link.id, { icon: event.target.value })}>
+                                    <option value="link">Link</option>
+                                    <option value="shopping-bag">Bag</option>
+                                    <option value="sparkles">Sparkles</option>
+                                    <option value="store">Store</option>
+                                    <option value="instagram">Instagram</option>
+                                    <option value="music">Music</option>
+                                  </select>
+                                </label>
+                              </div>
+                              <div className="field-row">
+                                <label>
+                                  Storefront slug
+                                  <input value={link.collectionSlug ?? ''} onChange={(event) => updateLinkDraft(link.id, { collectionSlug: event.target.value || undefined })} />
+                                </label>
+                                <label>
+                                  Display order
+                                  <input type="number" value={link.sortOrder} onChange={(event) => updateLinkDraft(link.id, { sortOrder: Number(event.target.value) })} />
+                                </label>
+                              </div>
+                              <button type="button" className="danger-button" onClick={() => removeExistingLink(link)}>
+                                <Trash2 size={16} />
+                                Delete permanently
+                              </button>
+                            </details>
+                            <div className="editor-actions">
+                              <button type="button" className="primary-button" onClick={() => saveExistingLink(link)}>
+                                <Check size={17} />
+                                Save link
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </article>
+                    )
+                  })}
+              </div>
+
+              <form className="admin-panel add-panel" onSubmit={addLink}>
+                <div className="panel-title">
+                  <Plus size={20} />
+                  <h2>Add a new link</h2>
+                </div>
+                <div className="field-row">
+                  <label>
+                    Button title
+                    <input value={linkDraft.label} onChange={(event) => setLinkDraft({ ...linkDraft, label: event.target.value })} required />
+                  </label>
+                  <label>
+                    Link URL
+                    <input value={linkDraft.href} onChange={(event) => setLinkDraft({ ...linkDraft, href: event.target.value })} required />
+                  </label>
+                </div>
+                <label>
+                  Short description
+                  <textarea value={linkDraft.description} onChange={(event) => setLinkDraft({ ...linkDraft, description: event.target.value })} />
+                </label>
+                <details className="advanced-settings">
+                  <summary>Advanced settings</summary>
+                  <div className="field-row">
+                    <label>
+                      Button style
+                      <select value={linkDraft.kind} onChange={(event) => setLinkDraft({ ...linkDraft, kind: event.target.value as AdminDraft['kind'] })}>
+                        <option value="standard">Standard</option>
+                        <option value="feature">Featured</option>
+                        <option value="storefront">Storefront</option>
+                        <option value="social">Social</option>
+                      </select>
+                    </label>
+                    <label>
+                      Icon
+                      <select value={linkDraft.icon} onChange={(event) => setLinkDraft({ ...linkDraft, icon: event.target.value })}>
+                        <option value="link">Link</option>
+                        <option value="shopping-bag">Bag</option>
+                        <option value="sparkles">Sparkles</option>
+                        <option value="store">Store</option>
+                        <option value="instagram">Instagram</option>
+                        <option value="music">Music</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label>
+                    Storefront slug
+                    <input
+                      value={linkDraft.collectionSlug}
+                      placeholder="shop-my-finds"
+                      onChange={(event) => setLinkDraft({ ...linkDraft, collectionSlug: event.target.value })}
+                    />
+                  </label>
+                </details>
+                <button className="primary-button" type="submit">
+                  <Plus size={17} />
+                  Add link
+                </button>
+              </form>
+            </section>
+          ) : null}
+
+          {activeTab === 'products' ? (
+            <section className="admin-workspace">
+              <div className="workspace-heading">
+                <div>
+                  <p className="small-label">Storefront</p>
+                  <h2>Products</h2>
+                  <p>Paste a product link first. Review the imported details, then save the card.</p>
+                </div>
+              </div>
+              <form className="admin-panel product-builder" onSubmit={addProduct}>
+                <div className="import-box primary-import">
+                  <input
+                    value={importUrl}
+                    onChange={(event) => setImportUrl(event.target.value)}
+                    placeholder="Paste product URL"
+                    type="url"
+                  />
+                  <button type="button" className="secondary-button" onClick={importProduct} disabled={isImporting}>
+                    {isImporting ? <Loader2 size={16} className="spin" /> : <Copy size={16} />}
+                    Import
+                  </button>
+                </div>
+                {productDraft.imageUrl || productDraft.title ? (
+                  <div className="product-preview-row">
+                    {productDraft.imageUrl ? <img src={productDraft.imageUrl} alt="" /> : <span />}
+                    <div>
+                      <strong>{productDraft.title || 'Imported product'}</strong>
+                      <p>{productDraft.storeName || 'Store'} {productDraft.price ? `/ ${productDraft.price}` : ''}</p>
+                    </div>
+                  </div>
+                ) : null}
+                <div className="field-row">
+                  <label>
+                    Product title
+                    <input value={productDraft.title} onChange={(event) => setProductDraft({ ...productDraft, title: event.target.value })} required />
+                  </label>
+                  <label>
+                    Store
+                    <input value={productDraft.storeName} onChange={(event) => setProductDraft({ ...productDraft, storeName: event.target.value })} required />
+                  </label>
+                </div>
+                <div className="field-row">
+                  <label>
+                    Price
+                    <input value={productDraft.price} onChange={(event) => setProductDraft({ ...productDraft, price: event.target.value })} />
+                  </label>
+                  <label>
+                    Category
+                    <input value={productDraft.category} onChange={(event) => setProductDraft({ ...productDraft, category: event.target.value })} />
+                  </label>
+                </div>
+                <details className="advanced-settings">
+                  <summary>Advanced settings</summary>
+                  <label>
+                    Image URL
+                    <input value={productDraft.imageUrl} onChange={(event) => setProductDraft({ ...productDraft, imageUrl: event.target.value })} required />
+                  </label>
+                  <label>
+                    Product URL
+                    <input value={productDraft.href} onChange={(event) => setProductDraft({ ...productDraft, href: event.target.value })} required />
+                  </label>
+                  <label>
+                    Collection
+                    <select value={productDraft.collectionSlug} onChange={(event) => setProductDraft({ ...productDraft, collectionSlug: event.target.value })}>
+                      {data.collections.map((collection) => (
+                        <option key={collection.slug} value={collection.slug}>
+                          {collection.title}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </details>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={productDraft.isFavorite}
+                    onChange={(event) => setProductDraft({ ...productDraft, isFavorite: event.target.checked })}
+                  />
+                  Mark as Rita pick
+                </label>
+                <button className="primary-button" type="submit">
+                  <Check size={17} />
+                  Save product
+                </button>
+              </form>
+              <div className="product-admin-grid">
+                {data.products.map((product) => (
+                  <ProductCard key={product.id} product={product} compact />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {activeTab === 'profile' ? (
+            <section className="admin-workspace">
+              <form className="admin-panel" onSubmit={saveProfile}>
+                <div className="panel-title">
+                  <Camera size={20} />
+                  <h2>Profile</h2>
+                </div>
+                <div className="field-row">
+                  <label>
+                    Name
+                    <input value={profileDraft.name} onChange={(event) => setProfileDraft({ ...profileDraft, name: event.target.value })} required />
+                  </label>
+                  <label>
+                    Handle
+                    <input value={profileDraft.handle} onChange={(event) => setProfileDraft({ ...profileDraft, handle: event.target.value })} required />
+                  </label>
+                </div>
+                <label>
+                  Tagline
+                  <input value={profileDraft.tagline} onChange={(event) => setProfileDraft({ ...profileDraft, tagline: event.target.value })} required />
+                </label>
+                <label>
+                  Bio
+                  <textarea value={profileDraft.bio} onChange={(event) => setProfileDraft({ ...profileDraft, bio: event.target.value })} required />
+                </label>
+                <label>
+                  Location / descriptor
+                  <input value={profileDraft.location} onChange={(event) => setProfileDraft({ ...profileDraft, location: event.target.value })} required />
+                </label>
+                <details className="advanced-settings">
+                  <summary>Images</summary>
+                  <div className="field-row">
+                    <label>
+                      Avatar image URL
+                      <input value={profileDraft.avatarUrl} onChange={(event) => setProfileDraft({ ...profileDraft, avatarUrl: event.target.value })} required />
+                    </label>
+                    <label>
+                      Hero image URL
+                      <input value={profileDraft.heroImageUrl} onChange={(event) => setProfileDraft({ ...profileDraft, heroImageUrl: event.target.value })} required />
+                    </label>
+                  </div>
+                </details>
+                <button className="primary-button" type="submit">
+                  <Check size={17} />
+                  Save profile
+                </button>
+              </form>
+            </section>
+          ) : null}
+
+          {activeTab === 'appearance' ? (
+            <section className="admin-workspace appearance-workspace">
+              <div className="workspace-heading">
+                <div>
+                  <p className="small-label">Preview first</p>
+                  <h2>Appearance</h2>
+                  <p>Click any theme to preview it immediately. Save only when the preview looks right.</p>
+                </div>
+              </div>
+              <div className="appearance-layout">
+                <div className="admin-panel">
+                  <label>
+                    Current theme
+                    <select value={profileDraft.themeSlug} onChange={(event) => previewTheme(event.target.value)}>
+                      {themes.map((theme) => (
+                        <option key={theme.slug} value={theme.slug}>
+                          {theme.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="theme-picker" aria-label="Theme previews">
+                    {themes.map((theme) => (
                       <button
                         type="button"
-                        className="icon-button"
-                        aria-label={link.isActive ? 'Hide link' : 'Show link'}
-                        onClick={() =>
-                          setLinkEdits((current) =>
-                            current.map((item) =>
-                              item.id === link.id ? { ...item, isActive: !item.isActive } : item,
-                            ),
-                          )
-                        }
+                        key={theme.slug}
+                        className={theme.slug === profileDraft.themeSlug ? 'active' : ''}
+                        onClick={() => previewTheme(theme.slug)}
                       >
-                        {link.isActive ? <Eye size={17} /> : <EyeOff size={17} />}
+                        <span className="theme-swatch" style={{ background: theme.colors.bodyBg }}>
+                          <i style={{ background: theme.colors.featureBg }} />
+                          <i style={{ background: theme.colors.accent }} />
+                          <i style={{ background: theme.colors.accent3 }} />
+                        </span>
+                        <strong>{theme.name}</strong>
+                        <small>{theme.description}</small>
                       </button>
-                    </div>
-                    <div className="field-row">
-                      <label>
-                        Label
-                        <input
-                          value={link.label}
-                          onChange={(event) =>
-                            setLinkEdits((current) =>
-                              current.map((item) =>
-                                item.id === link.id ? { ...item, label: event.target.value } : item,
-                              ),
-                            )
-                          }
-                        />
-                      </label>
-                      <label>
-                        URL
-                        <input
-                          value={link.href}
-                          onChange={(event) =>
-                            setLinkEdits((current) =>
-                              current.map((item) =>
-                                item.id === link.id ? { ...item, href: event.target.value } : item,
-                              ),
-                            )
-                          }
-                        />
-                      </label>
-                    </div>
-                    <label>
-                      Description
-                      <textarea
-                        value={link.description}
-                        onChange={(event) =>
-                          setLinkEdits((current) =>
-                            current.map((item) =>
-                              item.id === link.id ? { ...item, description: event.target.value } : item,
-                            ),
-                          )
-                        }
-                      />
-                    </label>
-                    <div className="field-row">
-                      <label>
-                        Type
-                        <select
-                          value={link.kind}
-                          onChange={(event) =>
-                            setLinkEdits((current) =>
-                              current.map((item) =>
-                                item.id === link.id
-                                  ? { ...item, kind: event.target.value as BioLink['kind'] }
-                                  : item,
-                              ),
-                            )
-                          }
-                        >
-                          <option value="standard">Standard</option>
-                          <option value="feature">Featured</option>
-                          <option value="storefront">Storefront</option>
-                          <option value="social">Social</option>
-                        </select>
-                      </label>
-                      <label>
-                        Icon
-                        <select
-                          value={link.icon}
-                          onChange={(event) =>
-                            setLinkEdits((current) =>
-                              current.map((item) =>
-                                item.id === link.id ? { ...item, icon: event.target.value } : item,
-                              ),
-                            )
-                          }
-                        >
-                          <option value="link">Link</option>
-                          <option value="shopping-bag">Bag</option>
-                          <option value="sparkles">Sparkles</option>
-                          <option value="store">Store</option>
-                          <option value="instagram">Instagram</option>
-                          <option value="music">Music</option>
-                        </select>
-                      </label>
-                    </div>
-                    <div className="field-row">
-                      <label>
-                        Storefront slug
-                        <input
-                          value={link.collectionSlug ?? ''}
-                          onChange={(event) =>
-                            setLinkEdits((current) =>
-                              current.map((item) =>
-                                item.id === link.id
-                                  ? { ...item, collectionSlug: event.target.value || undefined }
-                                  : item,
-                              ),
-                            )
-                          }
-                        />
-                      </label>
-                      <label>
-                        Sort order
-                        <input
-                          type="number"
-                          value={link.sortOrder}
-                          onChange={(event) =>
-                            setLinkEdits((current) =>
-                              current.map((item) =>
-                                item.id === link.id
-                                  ? { ...item, sortOrder: Number(event.target.value) }
-                                  : item,
-                              ),
-                            )
-                          }
-                        />
-                      </label>
-                    </div>
-                    <div className="editor-actions">
-                      <button type="button" className="primary-button" onClick={() => saveExistingLink(link)}>
-                        <Check size={17} />
-                        Save changes
-                      </button>
-                      <button type="button" className="secondary-button" onClick={() => removeExistingLink(link)}>
-                        <Trash2 size={17} />
-                        Delete
-                      </button>
-                    </div>
-                  </article>
-                ))}
-            </div>
-          </section>
-
-          <form className="admin-panel" onSubmit={addLink}>
-            <div className="panel-title">
-              <LinkIcon size={20} />
-              <h2>Add a bio link</h2>
-            </div>
-            <label>
-              Label
-              <input value={linkDraft.label} onChange={(event) => setLinkDraft({ ...linkDraft, label: event.target.value })} required />
-            </label>
-            <label>
-              URL
-              <input value={linkDraft.href} onChange={(event) => setLinkDraft({ ...linkDraft, href: event.target.value })} required />
-            </label>
-            <label>
-              Description
-              <textarea value={linkDraft.description} onChange={(event) => setLinkDraft({ ...linkDraft, description: event.target.value })} />
-            </label>
-            <div className="field-row">
-              <label>
-                Type
-                <select value={linkDraft.kind} onChange={(event) => setLinkDraft({ ...linkDraft, kind: event.target.value as AdminDraft['kind'] })}>
-                  <option value="standard">Standard</option>
-                  <option value="feature">Featured</option>
-                  <option value="storefront">Storefront</option>
-                  <option value="social">Social</option>
-                </select>
-              </label>
-              <label>
-                Icon
-                <select value={linkDraft.icon} onChange={(event) => setLinkDraft({ ...linkDraft, icon: event.target.value })}>
-                  <option value="link">Link</option>
-                  <option value="shopping-bag">Bag</option>
-                  <option value="sparkles">Sparkles</option>
-                  <option value="store">Store</option>
-                  <option value="instagram">Instagram</option>
-                  <option value="music">Music</option>
-                </select>
-              </label>
-            </div>
-            <label>
-              Storefront slug
-              <input
-                value={linkDraft.collectionSlug}
-                placeholder="shop-my-finds"
-                onChange={(event) => setLinkDraft({ ...linkDraft, collectionSlug: event.target.value })}
-              />
-            </label>
-            <button className="primary-button" type="submit">
-              <Plus size={17} />
-              Save link
-            </button>
-          </form>
-
-          <form className="admin-panel" onSubmit={addProduct}>
-            <div className="panel-title">
-              <ShoppingBag size={20} />
-              <h2>Add storefront product</h2>
-            </div>
-            <div className="import-box">
-              <input
-                value={importUrl}
-                onChange={(event) => setImportUrl(event.target.value)}
-                placeholder="Paste product URL"
-                type="url"
-              />
-              <button type="button" className="secondary-button" onClick={importProduct} disabled={isImporting}>
-                {isImporting ? <Loader2 size={16} className="spin" /> : <Copy size={16} />}
-                Import
-              </button>
-            </div>
-            <label>
-              Product title
-              <input value={productDraft.title} onChange={(event) => setProductDraft({ ...productDraft, title: event.target.value })} required />
-            </label>
-            <div className="field-row">
-              <label>
-                Store
-                <input value={productDraft.storeName} onChange={(event) => setProductDraft({ ...productDraft, storeName: event.target.value })} required />
-              </label>
-              <label>
-                Price
-                <input value={productDraft.price} onChange={(event) => setProductDraft({ ...productDraft, price: event.target.value })} />
-              </label>
-            </div>
-            <label>
-              Image URL
-              <input value={productDraft.imageUrl} onChange={(event) => setProductDraft({ ...productDraft, imageUrl: event.target.value })} required />
-            </label>
-            <label>
-              Product URL
-              <input value={productDraft.href} onChange={(event) => setProductDraft({ ...productDraft, href: event.target.value })} required />
-            </label>
-            <div className="field-row">
-              <label>
-                Category
-                <input value={productDraft.category} onChange={(event) => setProductDraft({ ...productDraft, category: event.target.value })} />
-              </label>
-              <label>
-                Collection
-                <select value={productDraft.collectionSlug} onChange={(event) => setProductDraft({ ...productDraft, collectionSlug: event.target.value })}>
-                  {data.collections.map((collection) => (
-                    <option key={collection.slug} value={collection.slug}>
-                      {collection.title}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={productDraft.isFavorite}
-                onChange={(event) => setProductDraft({ ...productDraft, isFavorite: event.target.checked })}
-              />
-              Mark as Rita pick
-            </label>
-            <button className="primary-button" type="submit">
-              <Check size={17} />
-              Save product
-            </button>
-          </form>
-        </div>
+                    ))}
+                  </div>
+                  <button className="primary-button" type="button" onClick={saveProfile}>
+                    <Check size={17} />
+                    Save theme
+                  </button>
+                </div>
+                <aside className="phone-preview" aria-label="Theme preview">
+                  <div className="phone-preview-card">
+                    <img src={profileDraft.avatarUrl} alt="" />
+                    <h3>{profileDraft.name}</h3>
+                    <p>{profileDraft.handle}</p>
+                    {linkEdits
+                      .filter((link) => link.isActive)
+                      .sort((a, b) => a.sortOrder - b.sortOrder)
+                      .slice(0, 3)
+                      .map((link) => (
+                        <span key={link.id}>{link.label}</span>
+                      ))}
+                  </div>
+                </aside>
+              </div>
+            </section>
+          ) : null}
+        </>
       )}
-
-      <section className="admin-panel admin-preview">
-        <div className="panel-title">
-          <Store size={20} />
-          <h2>Content snapshot</h2>
-        </div>
-        <div className="snapshot-list">
-          {linkEdits.slice(0, 4).map((link) => (
-            <span key={link.id}>{link.label}</span>
-          ))}
-        </div>
-        <div className="snapshot-list">
-          {data.products.slice(0, 4).map((product) => (
-            <span key={product.id}>{product.title}</span>
-          ))}
-        </div>
-        {saveMessage ? <p className="form-message">{saveMessage}</p> : null}
-      </section>
     </main>
   )
 }
