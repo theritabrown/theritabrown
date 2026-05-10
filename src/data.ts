@@ -11,6 +11,7 @@ export const profile: Profile = {
   heroImageUrl:
     'https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&w=1200&q=85',
   location: 'Lifestyle creator',
+  themeSlug: 'soft-studio',
 }
 
 export const bioLinks: BioLink[] = [

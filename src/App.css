@@ -27,22 +27,22 @@
 .ambient-one {
   top: -72px;
   left: -96px;
-  background: #f6b68d;
+  background: var(--accent-2);
 }
 
 .ambient-two {
   right: -118px;
   bottom: 22%;
-  background: #75c6ba;
+  background: var(--accent-3);
 }
 
 .profile-card {
   position: relative;
   overflow: visible;
-  border: 1px solid rgba(32, 29, 27, 0.1);
+  border: 1px solid var(--line);
   border-radius: 26px;
-  background: rgba(255, 252, 247, 0.82);
-  box-shadow: 0 24px 70px rgba(54, 43, 34, 0.14);
+  background: var(--panel);
+  box-shadow: var(--theme-shadow);
   backdrop-filter: blur(20px);
   text-align: center;
 }
@@ -64,7 +64,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 252, 247, 0.9));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), var(--panel));
   border-radius: 26px 26px 0 0;
 }
 
@@ -77,9 +77,9 @@
   height: 104px;
   padding: 5px;
   border-radius: 999px;
-  background: #fffdf8;
+  background: var(--panel-strong);
   transform: translateX(-50%);
-  box-shadow: 0 14px 34px rgba(32, 29, 27, 0.18);
+  box-shadow: var(--theme-shadow);
 }
 
 .avatar-ring img {
@@ -113,7 +113,7 @@
 
 .handle {
   margin: 10px 0 0;
-  color: #9b5c3d;
+  color: var(--accent);
   font-weight: 800;
 }
 
@@ -159,7 +159,7 @@
   width: 42px;
   min-height: 42px;
   color: var(--ink);
-  background: #f2ece2;
+  background: color-mix(in srgb, var(--accent-2) 18%, var(--panel-strong));
 }
 
 .social-row a:hover,
@@ -185,23 +185,23 @@
   align-items: center;
   min-height: 76px;
   padding: 12px;
-  border: 1px solid rgba(32, 29, 27, 0.1);
+  border: 1px solid var(--line);
   border-radius: 22px;
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 16px 44px rgba(54, 43, 34, 0.08);
+  background: var(--panel);
+  box-shadow: var(--theme-shadow);
   text-align: left;
   text-decoration: none;
   animation: rise 540ms ease both;
 }
 
 .bio-link.feature {
-  background: #201d1b;
-  color: #fffaf2;
+  background: var(--feature-bg);
+  color: var(--feature-ink);
 }
 
 .bio-link.storefront {
-  background: linear-gradient(135deg, #fff4dd, #e6f3ee 72%);
+  background: var(--storefront-bg);
 }
 
 .link-icon,
@@ -211,12 +211,12 @@
   width: 48px;
   height: 48px;
   border-radius: 16px;
-  background: rgba(32, 29, 27, 0.08);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
 }
 
 .bio-link.feature .link-icon,
 .bio-link.feature .arrow {
-  background: rgba(255, 255, 255, 0.14);
+  background: color-mix(in srgb, var(--feature-ink) 14%, transparent);
 }
 
 .arrow {
@@ -276,7 +276,7 @@
   min-height: 38px;
   padding: 0 14px;
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.76);
+  background: var(--panel);
 }
 
 .product-rail {
@@ -293,10 +293,10 @@
 
 .product-card {
   overflow: hidden;
-  border: 1px solid rgba(32, 29, 27, 0.1);
+  border: 1px solid var(--line);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.84);
-  box-shadow: 0 18px 44px rgba(54, 43, 34, 0.1);
+  background: var(--panel);
+  box-shadow: var(--theme-shadow);
   transition:
     transform 180ms ease,
     box-shadow 180ms ease;
@@ -331,8 +331,8 @@
   min-height: 28px;
   padding: 0 10px;
   border-radius: 999px;
-  color: #fffaf2;
-  background: rgba(32, 29, 27, 0.82);
+  color: var(--feature-ink);
+  background: color-mix(in srgb, var(--feature-bg) 82%, transparent);
   font-size: 0.72rem;
   font-weight: 850;
 }
@@ -344,7 +344,7 @@
 }
 
 .product-copy > span {
-  color: #a06343;
+  color: var(--accent);
   font-size: 0.74rem;
   font-weight: 850;
   text-transform: uppercase;
@@ -368,8 +368,8 @@
 .product-actions a {
   min-height: 34px;
   padding: 0 12px;
-  color: #fffaf2;
-  background: var(--ink);
+  color: var(--button-ink);
+  background: var(--button-bg);
   font-size: 0.76rem;
 }
 
@@ -390,7 +390,7 @@
   overflow: hidden;
   aspect-ratio: 16 / 10;
   border-radius: 28px;
-  box-shadow: 0 28px 80px rgba(54, 43, 34, 0.16);
+  box-shadow: var(--theme-shadow);
 }
 
 .store-hero-image img {
@@ -421,10 +421,10 @@
 .category-tabs button {
   min-height: 38px;
   padding: 0 16px;
-  border: 1px solid rgba(32, 29, 27, 0.12);
+  border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.76);
+  background: var(--panel);
   font: inherit;
   font-size: 0.86rem;
   font-weight: 800;
@@ -432,8 +432,8 @@
 }
 
 .category-tabs button.active {
-  color: #fffaf2;
-  background: var(--ink);
+  color: var(--button-ink);
+  background: var(--button-bg);
 }
 
 .product-grid {
@@ -478,14 +478,138 @@
   display: grid;
   gap: 16px;
   padding: 18px;
-  border: 1px solid rgba(32, 29, 27, 0.1);
+  border: 1px solid var(--line);
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 18px 54px rgba(54, 43, 34, 0.1);
+  background: var(--panel);
+  box-shadow: var(--theme-shadow);
 }
 
 .admin-panel-wide {
   grid-column: 1 / -1;
+}
+
+.theme-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 10px;
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.theme-picker button {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 10px;
+  align-items: center;
+  min-height: 74px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  color: var(--ink);
+  background: var(--panel-strong);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.theme-picker button.active {
+  outline: 3px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-color: var(--accent);
+}
+
+.theme-picker strong,
+.theme-picker small {
+  display: block;
+}
+
+.theme-picker strong {
+  font-size: 0.88rem;
+}
+
+.theme-picker small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.theme-swatch {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: end;
+  gap: 3px;
+  width: 48px;
+  height: 48px;
+  padding: 8px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.theme-swatch i {
+  display: block;
+  height: 20px;
+  border-radius: 999px;
+}
+
+.theme-swatch i:first-child {
+  height: 32px;
+}
+
+.theme-swatch i:last-child {
+  height: 26px;
+}
+
+.link-manager {
+  display: grid;
+  gap: 12px;
+}
+
+.link-editor {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--panel-strong);
+}
+
+.link-editor.is-hidden {
+  opacity: 0.68;
+}
+
+.link-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.link-editor-head div {
+  display: grid;
+  gap: 2px;
+}
+
+.link-editor-head span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--accent-2) 18%, var(--panel-strong));
+  cursor: pointer;
+}
+
+.editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .auth-panel,
@@ -514,10 +638,10 @@
   width: 100%;
   min-height: 44px;
   box-sizing: border-box;
-  border: 1px solid rgba(32, 29, 27, 0.12);
+  border: 1px solid var(--line);
   border-radius: 14px;
   color: var(--ink);
-  background: #fffdf8;
+  background: var(--panel-strong);
   font: inherit;
   font-size: 0.95rem;
   padding: 10px 12px;
@@ -547,13 +671,13 @@
 }
 
 .primary-button {
-  color: #fffaf2;
-  background: var(--ink);
+  color: var(--button-ink);
+  background: var(--button-bg);
 }
 
 .secondary-button {
   color: var(--ink);
-  background: #efe6d8;
+  background: color-mix(in srgb, var(--accent-2) 22%, var(--panel-strong));
 }
 
 .secondary-button:disabled {
@@ -574,7 +698,7 @@
 }
 
 .form-message {
-  color: #9b5c3d;
+  color: var(--accent);
   font-weight: 800;
 }
 
@@ -590,7 +714,7 @@
   align-items: center;
   padding: 0 12px;
   border-radius: 999px;
-  background: #f2ece2;
+  background: color-mix(in srgb, var(--accent-2) 18%, var(--panel-strong));
   color: var(--ink);
   font-size: 0.8rem;
   font-weight: 800;

@@ -8,13 +8,17 @@ import {
   ExternalLink,
   Heart,
   Home,
+  Eye,
+  EyeOff,
   Link as LinkIcon,
   Loader2,
   Music2,
+  Palette,
   Plus,
   ShoppingBag,
   Sparkles,
   Store,
+  Trash2,
 } from 'lucide-react'
 import './App.css'
 import { bioLinks as demoLinks, collections as demoCollections, products as demoProducts, profile as demoProfile } from './data'
@@ -24,8 +28,11 @@ import {
   hasSupabaseConfig,
   loadSiteData,
   supabase,
+  deleteBioLink,
+  updateBioLink,
   updateProfile,
 } from './supabase'
+import { themes, themeStyle } from './themes'
 import type { AdminDraft, BioLink, Product, ProductCollection, ProductMetadata, Profile } from './types'
 
 type SiteData = {
@@ -102,11 +109,27 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    const variables = themeStyle(siteData.profile.themeSlug)
+
+    Object.entries(variables).forEach(([key, value]) => {
+      document.documentElement.style.setProperty(key, String(value))
+    })
+
+    document.documentElement.dataset.theme = siteData.profile.themeSlug
+  }, [siteData.profile.themeSlug])
+
   const path = window.location.pathname
   const storefrontMatch = path.match(/^\/store\/([^/]+)/)
 
   if (path.startsWith('/admin')) {
-    return <Admin data={siteData} usingDemoData={usingDemoData} />
+    return (
+      <Admin
+        key={`${usingDemoData}-${siteData.profile.id}-${siteData.profile.themeSlug}-${siteData.links.length}`}
+        data={siteData}
+        usingDemoData={usingDemoData}
+      />
+    )
   }
 
   if (storefrontMatch?.[1]) {
@@ -328,6 +351,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
   const [isSignedIn, setIsSignedIn] = useState(usingDemoData)
   const [authMessage, setAuthMessage] = useState(usingDemoData ? 'Preview admin enabled until Supabase is connected.' : '')
   const [profileDraft, setProfileDraft] = useState(data.profile)
+  const [linkEdits, setLinkEdits] = useState(data.links)
   const [linkDraft, setLinkDraft] = useState<AdminDraft>(blankLinkDraft)
   const [productDraft, setProductDraft] = useState(blankProductDraft)
   const [importUrl, setImportUrl] = useState('')
@@ -370,6 +394,33 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
       setSaveMessage('Link saved. Refresh to see live content.')
     } catch (error) {
       setSaveMessage(error instanceof Error ? error.message : 'Could not save link yet.')
+    }
+  }
+
+  async function saveExistingLink(link: BioLink) {
+    setSaveMessage(`Saving ${link.label}...`)
+    try {
+      await updateBioLink(link)
+      setSaveMessage(`${link.label} saved.`)
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? error.message : 'Could not save link.')
+    }
+  }
+
+  async function removeExistingLink(link: BioLink) {
+    const confirmed = window.confirm(`Delete "${link.label}"? Hiding is safer if you may need it later.`)
+
+    if (!confirmed) {
+      return
+    }
+
+    setSaveMessage(`Deleting ${link.label}...`)
+    try {
+      await deleteBioLink(link.id)
+      setLinkEdits((current) => current.filter((item) => item.id !== link.id))
+      setSaveMessage(`${link.label} deleted.`)
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? error.message : 'Could not delete link.')
     }
   }
 
@@ -522,6 +573,37 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
               </label>
             </div>
             <label>
+              Theme
+              <select
+                value={profileDraft.themeSlug}
+                onChange={(event) => setProfileDraft({ ...profileDraft, themeSlug: event.target.value })}
+              >
+                {themes.map((theme) => (
+                  <option key={theme.slug} value={theme.slug}>
+                    {theme.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="theme-picker" aria-label="Theme previews">
+              {themes.map((theme) => (
+                <button
+                  type="button"
+                  key={theme.slug}
+                  className={theme.slug === profileDraft.themeSlug ? 'active' : ''}
+                  onClick={() => setProfileDraft({ ...profileDraft, themeSlug: theme.slug })}
+                >
+                  <span className="theme-swatch" style={{ background: theme.colors.bodyBg }}>
+                    <i style={{ background: theme.colors.featureBg }} />
+                    <i style={{ background: theme.colors.accent }} />
+                    <i style={{ background: theme.colors.accent3 }} />
+                  </span>
+                  <strong>{theme.name}</strong>
+                  <small>{theme.description}</small>
+                </button>
+              ))}
+            </div>
+            <label>
               Location / descriptor
               <input
                 value={profileDraft.location}
@@ -534,6 +616,168 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
               Save profile
             </button>
           </form>
+
+          <section className="admin-panel admin-panel-wide">
+            <div className="panel-title">
+              <Palette size={20} />
+              <h2>Manage existing links</h2>
+            </div>
+            <div className="link-manager">
+              {linkEdits
+                .slice()
+                .sort((a, b) => a.sortOrder - b.sortOrder)
+                .map((link) => (
+                  <article key={link.id} className={`link-editor ${link.isActive ? '' : 'is-hidden'}`}>
+                    <div className="link-editor-head">
+                      <div>
+                        <strong>{link.label || 'Untitled link'}</strong>
+                        <span>{link.isActive ? 'Visible on public page' : 'Hidden from public page'}</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="icon-button"
+                        aria-label={link.isActive ? 'Hide link' : 'Show link'}
+                        onClick={() =>
+                          setLinkEdits((current) =>
+                            current.map((item) =>
+                              item.id === link.id ? { ...item, isActive: !item.isActive } : item,
+                            ),
+                          )
+                        }
+                      >
+                        {link.isActive ? <Eye size={17} /> : <EyeOff size={17} />}
+                      </button>
+                    </div>
+                    <div className="field-row">
+                      <label>
+                        Label
+                        <input
+                          value={link.label}
+                          onChange={(event) =>
+                            setLinkEdits((current) =>
+                              current.map((item) =>
+                                item.id === link.id ? { ...item, label: event.target.value } : item,
+                              ),
+                            )
+                          }
+                        />
+                      </label>
+                      <label>
+                        URL
+                        <input
+                          value={link.href}
+                          onChange={(event) =>
+                            setLinkEdits((current) =>
+                              current.map((item) =>
+                                item.id === link.id ? { ...item, href: event.target.value } : item,
+                              ),
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
+                    <label>
+                      Description
+                      <textarea
+                        value={link.description}
+                        onChange={(event) =>
+                          setLinkEdits((current) =>
+                            current.map((item) =>
+                              item.id === link.id ? { ...item, description: event.target.value } : item,
+                            ),
+                          )
+                        }
+                      />
+                    </label>
+                    <div className="field-row">
+                      <label>
+                        Type
+                        <select
+                          value={link.kind}
+                          onChange={(event) =>
+                            setLinkEdits((current) =>
+                              current.map((item) =>
+                                item.id === link.id
+                                  ? { ...item, kind: event.target.value as BioLink['kind'] }
+                                  : item,
+                              ),
+                            )
+                          }
+                        >
+                          <option value="standard">Standard</option>
+                          <option value="feature">Featured</option>
+                          <option value="storefront">Storefront</option>
+                          <option value="social">Social</option>
+                        </select>
+                      </label>
+                      <label>
+                        Icon
+                        <select
+                          value={link.icon}
+                          onChange={(event) =>
+                            setLinkEdits((current) =>
+                              current.map((item) =>
+                                item.id === link.id ? { ...item, icon: event.target.value } : item,
+                              ),
+                            )
+                          }
+                        >
+                          <option value="link">Link</option>
+                          <option value="shopping-bag">Bag</option>
+                          <option value="sparkles">Sparkles</option>
+                          <option value="store">Store</option>
+                          <option value="instagram">Instagram</option>
+                          <option value="music">Music</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div className="field-row">
+                      <label>
+                        Storefront slug
+                        <input
+                          value={link.collectionSlug ?? ''}
+                          onChange={(event) =>
+                            setLinkEdits((current) =>
+                              current.map((item) =>
+                                item.id === link.id
+                                  ? { ...item, collectionSlug: event.target.value || undefined }
+                                  : item,
+                              ),
+                            )
+                          }
+                        />
+                      </label>
+                      <label>
+                        Sort order
+                        <input
+                          type="number"
+                          value={link.sortOrder}
+                          onChange={(event) =>
+                            setLinkEdits((current) =>
+                              current.map((item) =>
+                                item.id === link.id
+                                  ? { ...item, sortOrder: Number(event.target.value) }
+                                  : item,
+                              ),
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
+                    <div className="editor-actions">
+                      <button type="button" className="primary-button" onClick={() => saveExistingLink(link)}>
+                        <Check size={17} />
+                        Save changes
+                      </button>
+                      <button type="button" className="secondary-button" onClick={() => removeExistingLink(link)}>
+                        <Trash2 size={17} />
+                        Delete
+                      </button>
+                    </div>
+                  </article>
+                ))}
+            </div>
+          </section>
 
           <form className="admin-panel" onSubmit={addLink}>
             <div className="panel-title">
@@ -665,7 +909,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
           <h2>Content snapshot</h2>
         </div>
         <div className="snapshot-list">
-          {data.links.slice(0, 4).map((link) => (
+          {linkEdits.slice(0, 4).map((link) => (
             <span key={link.id}>{link.label}</span>
           ))}
         </div>

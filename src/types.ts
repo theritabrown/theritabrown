@@ -9,6 +9,7 @@ export type Profile = {
   avatarUrl: string
   heroImageUrl: string
   location: string
+  themeSlug: string
 }
 
 export type BioLink = {

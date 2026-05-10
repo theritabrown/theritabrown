@@ -9,6 +9,7 @@ create table if not exists public.profiles (
   avatar_url text not null,
   hero_image_url text not null,
   location text not null,
+  theme_slug text not null default 'soft-studio',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -99,7 +100,8 @@ insert into public.profiles (
   bio,
   avatar_url,
   hero_image_url,
-  location
+  location,
+  theme_slug
 ) values (
   'rita-brown',
   'Rita Brown',
@@ -108,7 +110,8 @@ insert into public.profiles (
   'Sharing favorite home, lifestyle, beauty, and family finds that blend comfort, style, and simplicity.',
   'https://ugc.production.linktr.ee/02e07ec7-f0f2-4bef-ba73-9834c3185447_IMG-9417-Facetune-28-12-2024-14-54-27.jpeg?io=true&size=avatar-v3_0',
   'https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&w=1200&q=85',
-  'Lifestyle creator'
+  'Lifestyle creator',
+  'soft-studio'
 ) on conflict (id) do update set
   name = excluded.name,
   handle = excluded.handle,
@@ -116,7 +119,8 @@ insert into public.profiles (
   bio = excluded.bio,
   avatar_url = excluded.avatar_url,
   hero_image_url = excluded.hero_image_url,
-  location = excluded.location;
+  location = excluded.location,
+  theme_slug = excluded.theme_slug;
 
 insert into public.product_collections (slug, title, description, hero_image_url)
 values (

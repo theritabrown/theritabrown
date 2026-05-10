@@ -23,7 +23,7 @@ export async function loadSiteData() {
 
   const [profileResult, linksResult, collectionsResult, productsResult] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', 'rita-brown').single(),
-    supabase.from('bio_links').select('*').eq('is_active', true).order('sort_order'),
+    supabase.from('bio_links').select('*').order('sort_order'),
     supabase.from('product_collections').select('*').eq('is_active', true).order('created_at'),
     supabase.from('products').select('*').eq('is_active', true).order('sort_order'),
   ])
@@ -80,9 +80,47 @@ export async function updateProfile(profile: Profile) {
       avatar_url: profile.avatarUrl,
       hero_image_url: profile.heroImageUrl,
       location: profile.location,
+      theme_slug: profile.themeSlug,
       updated_at: new Date().toISOString(),
     })
     .eq('id', profile.id)
+
+  if (error) {
+    throw error
+  }
+}
+
+export async function updateBioLink(link: BioLink) {
+  if (!supabase) {
+    throw new Error('Supabase is not configured yet.')
+  }
+
+  const { error } = await supabase
+    .from('bio_links')
+    .update({
+      label: link.label,
+      description: link.description,
+      href: link.href,
+      kind: link.kind,
+      icon: link.icon,
+      collection_slug: link.collectionSlug || null,
+      is_active: link.isActive,
+      sort_order: link.sortOrder,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', link.id)
+
+  if (error) {
+    throw error
+  }
+}
+
+export async function deleteBioLink(id: string) {
+  if (!supabase) {
+    throw new Error('Supabase is not configured yet.')
+  }
+
+  const { error } = await supabase.from('bio_links').delete().eq('id', id)
 
   if (error) {
     throw error
@@ -121,6 +159,7 @@ function mapProfile(row: Record<string, string>): Profile {
     avatarUrl: row.avatar_url,
     heroImageUrl: row.hero_image_url,
     location: row.location,
+    themeSlug: row.theme_slug ?? 'soft-studio',
   }
 }
 
