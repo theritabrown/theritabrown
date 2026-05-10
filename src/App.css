@@ -716,6 +716,7 @@
 }
 
 .link-row-icon {
+  position: relative;
   display: grid;
   align-self: center;
   justify-self: center;
@@ -729,9 +730,12 @@
 
 .link-row-icon svg {
   display: block;
+  position: absolute;
+  top: 50%;
+  left: 50%;
   width: 20px;
   height: 20px;
-  margin: auto;
+  transform: translate(-50%, -50%);
 }
 
 .link-row-summary strong,
