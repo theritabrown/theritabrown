@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { BioLink, Product, ProductCollection, Profile } from './types'
+import type { BioLink, Product, ProductCollection, ProductDisplayStyle, Profile } from './types'
 import { normalizeUrl } from './url'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
@@ -228,6 +228,28 @@ export async function deleteProduct(product: Product) {
   }
 }
 
+export async function updateCollectionSettings(collection: ProductCollection) {
+  if (!supabase) {
+    throw new Error('Supabase is not configured yet.')
+  }
+
+  const { data, error } = await supabase
+    .from('product_collections')
+    .update({
+      display_style: collection.displayStyle,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', collection.id)
+    .select('*')
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapCollection(data)
+}
+
 function mapProfile(row: Record<string, string>): Profile {
   return {
     id: row.id,
@@ -256,15 +278,22 @@ function mapBioLink(row: Record<string, string | boolean | number | null>): BioL
   }
 }
 
-function mapCollection(row: Record<string, string | boolean>): ProductCollection {
+function mapCollection(row: Record<string, string | boolean | null>): ProductCollection {
   return {
     id: String(row.id),
     slug: String(row.slug),
     title: String(row.title),
     description: String(row.description),
     heroImageUrl: String(row.hero_image_url),
+    displayStyle: mapDisplayStyle(row.display_style),
     isActive: Boolean(row.is_active),
   }
+}
+
+function mapDisplayStyle(value: unknown): ProductDisplayStyle {
+  return value === 'spotlight' || value === 'compact-list' || value === 'masonry'
+    ? value
+    : 'editorial-grid'
 }
 
 function mapProduct(row: Record<string, string | boolean | number | null>): Product {

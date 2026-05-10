@@ -77,6 +77,7 @@ export const collections: ProductCollection[] = [
       'Pieces Rita would save, share, and send to a friend. Add links from any store and the storefront stays polished.',
     heroImageUrl:
       'https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=1200&q=85',
+    displayStyle: 'editorial-grid',
     isActive: true,
   },
 ]

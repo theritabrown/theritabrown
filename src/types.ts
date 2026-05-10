@@ -1,5 +1,7 @@
 export type LinkKind = 'social' | 'feature' | 'storefront' | 'standard'
 
+export type ProductDisplayStyle = 'editorial-grid' | 'spotlight' | 'compact-list' | 'masonry'
+
 export type Profile = {
   id: string
   name: string
@@ -30,6 +32,7 @@ export type ProductCollection = {
   title: string
   description: string
   heroImageUrl: string
+  displayStyle: ProductDisplayStyle
   isActive: boolean
 }
 

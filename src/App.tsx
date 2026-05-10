@@ -31,11 +31,12 @@ import {
   supabase,
   deleteBioLink,
   updateBioLink,
+  updateCollectionSettings,
   updateProduct,
   updateProfile,
 } from './supabase'
 import { applyTheme, themes } from './themes'
-import type { AdminDraft, BioLink, Product, ProductCollection, ProductMetadata, Profile } from './types'
+import type { AdminDraft, BioLink, Product, ProductCollection, ProductDisplayStyle, ProductMetadata, Profile } from './types'
 import { normalizeUrl } from './url'
 
 type SiteData = {
@@ -46,6 +47,29 @@ type SiteData = {
 }
 
 type AdminTab = 'links' | 'products' | 'profile' | 'appearance'
+
+const displayStyles: Array<{ value: ProductDisplayStyle; label: string; description: string }> = [
+  {
+    value: 'editorial-grid',
+    label: 'Editorial grid',
+    description: 'Balanced two-column product cards. Best all-purpose layout.',
+  },
+  {
+    value: 'spotlight',
+    label: 'Spotlight',
+    description: 'Makes the first product larger for a featured find.',
+  },
+  {
+    value: 'compact-list',
+    label: 'Compact list',
+    description: 'Easy scanning when there are lots of products.',
+  },
+  {
+    value: 'masonry',
+    label: 'Masonry',
+    description: 'Pinterest-style browsing with a more casual feel.',
+  },
+]
 
 const iconMap = {
   sparkles: Sparkles,
@@ -332,7 +356,7 @@ function Storefront({
         ))}
       </div>
 
-      <section className="product-grid" aria-label="Products">
+      <section className={`product-grid product-grid-${collection.displayStyle}`} aria-label="Products">
         {visibleProducts.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
@@ -375,6 +399,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
   const [authMessage, setAuthMessage] = useState(usingDemoData ? 'Preview admin enabled until Supabase is connected.' : '')
   const [profileDraft, setProfileDraft] = useState(data.profile)
   const [linkEdits, setLinkEdits] = useState(data.links)
+  const [collectionEdits, setCollectionEdits] = useState(data.collections)
   const [productEdits, setProductEdits] = useState(data.products)
   const [activeTab, setActiveTab] = useState<AdminTab>('links')
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null)
@@ -481,6 +506,10 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
     setProductEdits((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)))
   }
 
+  function updateCollectionDraft(slug: string, patch: Partial<ProductCollection>) {
+    setCollectionEdits((current) => current.map((item) => (item.slug === slug ? { ...item, ...patch } : item)))
+  }
+
   async function importProduct() {
     if (!importUrl) {
       return
@@ -537,6 +566,17 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
       setSaveMessage(`${savedProduct.title} saved.`)
     } catch (error) {
       setSaveMessage(error instanceof Error ? error.message : 'Could not save product.')
+    }
+  }
+
+  async function saveCollectionSettings(collection: ProductCollection) {
+    setSaveMessage(`Saving ${collection.title} display...`)
+    try {
+      const savedCollection = await updateCollectionSettings(collection)
+      setCollectionEdits((current) => current.map((item) => (item.id === collection.id ? savedCollection : item)))
+      setSaveMessage(`${savedCollection.title} display saved.`)
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? error.message : 'Could not save storefront display.')
     }
   }
 
@@ -808,6 +848,43 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                   <p>Edit saved products, hide old picks, or paste a new product link to create another card.</p>
                 </div>
               </div>
+              <section className="admin-panel storefront-settings">
+                <div className="panel-title">
+                  <Store size={20} />
+                  <h2>Storefront display</h2>
+                </div>
+                {collectionEdits.map((collection) => (
+                  <article className="display-style-editor" key={collection.slug}>
+                    <div>
+                      <strong>{collection.title}</strong>
+                      <span>Choose how products appear on the public storefront.</span>
+                    </div>
+                    <div className="display-style-options" role="radiogroup" aria-label={`${collection.title} display style`}>
+                      {displayStyles.map((style) => (
+                        <button
+                          type="button"
+                          key={style.value}
+                          className={collection.displayStyle === style.value ? 'active' : ''}
+                          onClick={() => updateCollectionDraft(collection.slug, { displayStyle: style.value })}
+                          aria-pressed={collection.displayStyle === style.value}
+                        >
+                          <span className={`display-style-preview display-style-preview-${style.value}`}>
+                            <i />
+                            <i />
+                            <i />
+                          </span>
+                          <strong>{style.label}</strong>
+                          <small>{style.description}</small>
+                        </button>
+                      ))}
+                    </div>
+                    <button className="primary-button" type="button" onClick={() => saveCollectionSettings(collection)}>
+                      <Check size={17} />
+                      Save display style
+                    </button>
+                  </article>
+                ))}
+              </section>
               <div className="link-manager compact">
                 {productEdits
                   .slice()
@@ -881,7 +958,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                               <label>
                                 Collection
                                 <select value={product.collectionSlug} onChange={(event) => updateProductDraft(product.id, { collectionSlug: event.target.value })}>
-                                  {data.collections.map((collection) => (
+                                  {collectionEdits.map((collection) => (
                                     <option key={collection.slug} value={collection.slug}>
                                       {collection.title}
                                     </option>
@@ -978,7 +1055,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                   <label>
                     Collection
                     <select value={productDraft.collectionSlug} onChange={(event) => setProductDraft({ ...productDraft, collectionSlug: event.target.value })}>
-                      {data.collections.map((collection) => (
+                      {collectionEdits.map((collection) => (
                         <option key={collection.slug} value={collection.slug}>
                           {collection.title}
                         </option>

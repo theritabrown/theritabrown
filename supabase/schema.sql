@@ -20,6 +20,7 @@ create table if not exists public.product_collections (
   title text not null,
   description text not null,
   hero_image_url text not null,
+  display_style text not null default 'editorial-grid' check (display_style in ('editorial-grid', 'spotlight', 'compact-list', 'masonry')),
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -122,16 +123,18 @@ insert into public.profiles (
   location = excluded.location,
   theme_slug = excluded.theme_slug;
 
-insert into public.product_collections (slug, title, description, hero_image_url)
+insert into public.product_collections (slug, title, description, hero_image_url, display_style)
 values (
   'shop-my-finds',
   'Shop My Finds',
   'Pieces Rita would save, share, and send to a friend. Add links from any store and the storefront stays polished.',
-  'https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=1200&q=85'
+  'https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=1200&q=85',
+  'editorial-grid'
 ) on conflict (slug) do update set
   title = excluded.title,
   description = excluded.description,
-  hero_image_url = excluded.hero_image_url;
+  hero_image_url = excluded.hero_image_url,
+  display_style = excluded.display_style;
 
 insert into public.bio_links (label, description, href, kind, icon, collection_slug, sort_order)
 values

@@ -473,6 +473,76 @@
   margin: 0 auto;
 }
 
+.product-grid-spotlight .product-card:first-child {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(220px, 0.85fr);
+  grid-column: 1 / -1;
+  align-items: stretch;
+}
+
+.product-grid-spotlight .product-card:first-child .product-image {
+  aspect-ratio: 16 / 10;
+}
+
+.product-grid-spotlight .product-card:first-child .product-copy {
+  align-content: center;
+  padding: 20px;
+}
+
+.product-grid-spotlight .product-card:first-child .product-copy h3 {
+  min-height: 0;
+  font-size: clamp(1.25rem, 3vw, 1.9rem);
+}
+
+.product-grid-compact-list {
+  grid-template-columns: 1fr;
+  max-width: 680px;
+}
+
+.product-grid-compact-list .product-card {
+  display: grid;
+  grid-template-columns: 144px minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.product-grid-compact-list .product-image {
+  aspect-ratio: auto;
+  min-height: 144px;
+}
+
+.product-grid-compact-list .product-copy {
+  align-content: center;
+}
+
+.product-grid-compact-list .product-copy h3 {
+  min-height: 0;
+}
+
+.product-grid-masonry {
+  display: block;
+  columns: 2 250px;
+  column-gap: 12px;
+}
+
+.product-grid-masonry .product-card {
+  display: inline-block;
+  width: 100%;
+  margin: 0 0 12px;
+  break-inside: avoid;
+}
+
+.product-grid-masonry .product-card:nth-child(3n + 1) .product-image {
+  aspect-ratio: 4 / 5;
+}
+
+.product-grid-masonry .product-card:nth-child(3n + 2) .product-image {
+  aspect-ratio: 1 / 1;
+}
+
+.product-grid-masonry .product-card:nth-child(3n) .product-image {
+  aspect-ratio: 5 / 4;
+}
+
 .admin-shell {
   min-height: 100svh;
   padding: 22px;
@@ -599,6 +669,115 @@
 
 .admin-panel-wide {
   grid-column: 1 / -1;
+}
+
+.storefront-settings {
+  max-width: none;
+}
+
+.display-style-editor {
+  display: grid;
+  gap: 14px;
+}
+
+.display-style-editor > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.display-style-editor > div:first-child strong,
+.display-style-options strong {
+  color: var(--ink);
+}
+
+.display-style-editor > div:first-child span,
+.display-style-options small {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.display-style-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.display-style-options button {
+  display: grid;
+  gap: 8px;
+  min-height: 152px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  color: var(--ink);
+  background: var(--panel-strong);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.display-style-options button.active {
+  border-color: var(--accent);
+  outline: 3px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  background: color-mix(in srgb, var(--accent-2) 10%, var(--panel-strong));
+}
+
+.display-style-options small {
+  line-height: 1.25;
+}
+
+.display-style-preview {
+  display: grid;
+  gap: 5px;
+  height: 54px;
+  padding: 7px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent-2) 18%, var(--panel));
+}
+
+.display-style-preview i {
+  display: block;
+  border-radius: 7px;
+  background: var(--accent);
+}
+
+.display-style-preview-editorial-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.display-style-preview-editorial-grid i {
+  min-height: 16px;
+}
+
+.display-style-preview-spotlight {
+  grid-template-columns: 1.3fr 0.7fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+.display-style-preview-spotlight i:first-child {
+  grid-row: 1 / -1;
+}
+
+.display-style-preview-compact-list i {
+  min-height: 10px;
+}
+
+.display-style-preview-masonry {
+  grid-template-columns: repeat(3, 1fr);
+  align-items: end;
+}
+
+.display-style-preview-masonry i:first-child {
+  height: 38px;
+}
+
+.display-style-preview-masonry i:nth-child(2) {
+  height: 24px;
+}
+
+.display-style-preview-masonry i:last-child {
+  height: 46px;
 }
 
 .theme-picker {
@@ -1208,6 +1387,7 @@
   .field-row,
   .import-box,
   .appearance-layout,
+  .display-style-options,
   .primary-import {
     grid-template-columns: 1fr;
   }
@@ -1220,9 +1400,32 @@
     gap: 10px;
   }
 
+  .product-grid-spotlight .product-card:first-child,
+  .product-grid-compact-list .product-card {
+    grid-template-columns: 1fr;
+  }
+
+  .product-grid-compact-list .product-card {
+    grid-template-columns: 112px minmax(0, 1fr);
+  }
+
+  .product-grid-compact-list .product-image {
+    aspect-ratio: auto;
+    min-height: 112px;
+  }
+
+  .product-grid-masonry {
+    columns: 1;
+  }
+
   .product-copy h3 {
     min-height: 54px;
     font-size: 0.93rem;
+  }
+
+  .product-grid-spotlight .product-card:first-child .product-copy h3,
+  .product-grid-compact-list .product-copy h3 {
+    min-height: 0;
   }
 
   .product-actions {
