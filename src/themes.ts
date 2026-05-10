@@ -555,3 +555,13 @@ export function themeStyle(slug?: string) {
     '--storefront-bg': theme.colors.storefrontBg,
   } as CSSProperties
 }
+
+export function applyTheme(slug?: string) {
+  const variables = themeStyle(slug)
+
+  Object.entries(variables).forEach(([key, value]) => {
+    document.documentElement.style.setProperty(key, String(value))
+  })
+
+  document.documentElement.dataset.theme = getTheme(slug).slug
+}

@@ -32,7 +32,7 @@ import {
   updateBioLink,
   updateProfile,
 } from './supabase'
-import { themes, themeStyle } from './themes'
+import { applyTheme, themes } from './themes'
 import type { AdminDraft, BioLink, Product, ProductCollection, ProductMetadata, Profile } from './types'
 
 type SiteData = {
@@ -110,13 +110,7 @@ function App() {
   }, [])
 
   useEffect(() => {
-    const variables = themeStyle(siteData.profile.themeSlug)
-
-    Object.entries(variables).forEach(([key, value]) => {
-      document.documentElement.style.setProperty(key, String(value))
-    })
-
-    document.documentElement.dataset.theme = siteData.profile.themeSlug
+    applyTheme(siteData.profile.themeSlug)
   }, [siteData.profile.themeSlug])
 
   const path = window.location.pathname
@@ -435,6 +429,11 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
     }
   }
 
+  function previewTheme(themeSlug: string) {
+    setProfileDraft({ ...profileDraft, themeSlug })
+    applyTheme(themeSlug)
+  }
+
   async function importProduct() {
     if (!importUrl) {
       return
@@ -576,7 +575,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
               Theme
               <select
                 value={profileDraft.themeSlug}
-                onChange={(event) => setProfileDraft({ ...profileDraft, themeSlug: event.target.value })}
+                onChange={(event) => previewTheme(event.target.value)}
               >
                 {themes.map((theme) => (
                   <option key={theme.slug} value={theme.slug}>
@@ -591,7 +590,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                   type="button"
                   key={theme.slug}
                   className={theme.slug === profileDraft.themeSlug ? 'active' : ''}
-                  onClick={() => setProfileDraft({ ...profileDraft, themeSlug: theme.slug })}
+                  onClick={() => previewTheme(theme.slug)}
                 >
                   <span className="theme-swatch" style={{ background: theme.colors.bodyBg }}>
                     <i style={{ background: theme.colors.featureBg }} />
