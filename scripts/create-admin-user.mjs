@@ -22,7 +22,7 @@ Required:
 Example:
   SUPABASE_URL="https://project.supabase.co" \\
   SUPABASE_SERVICE_ROLE_KEY="service-role-key" \\
-  ADMIN_EMAIL="Theritabrown@gmail.com" \\
+  ADMIN_EMAIL="admin@example.com" \\
   ADMIN_TEMP_PASSWORD="temporary-password" \\
   npm run create-admin
 `)
