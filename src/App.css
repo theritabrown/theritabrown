@@ -1319,14 +1319,13 @@
   .creator-hero {
     display: grid;
     grid-template-columns: 430px minmax(320px, 440px);
-    align-items: start;
+    align-items: center;
     gap: 22px;
     max-width: 920px;
   }
 
   .link-stack {
     margin-top: 0;
-    padding-top: 18px;
   }
 
   .section-heading {
