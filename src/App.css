@@ -603,11 +603,30 @@
 
 .theme-picker {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 12px;
+  gap: 18px;
   max-height: 520px;
   overflow: auto;
   padding-right: 4px;
+}
+
+.theme-group {
+  display: grid;
+  gap: 10px;
+}
+
+.theme-group h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.theme-group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
 }
 
 .theme-picker button {

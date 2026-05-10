@@ -384,6 +384,10 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
   const [importUrl, setImportUrl] = useState('')
   const [isImporting, setIsImporting] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
+  const themeGroups = ['Editorial', 'Soft', 'Colorful', 'Dark', 'Minimal'].map((category) => ({
+    category,
+    themes: themes.filter((theme) => theme.category === category),
+  }))
 
   async function signIn(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -1070,21 +1074,28 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                     </select>
                   </label>
                   <div className="theme-picker" aria-label="Theme previews">
-                    {themes.map((theme) => (
-                      <button
-                        type="button"
-                        key={theme.slug}
-                        className={theme.slug === profileDraft.themeSlug ? 'active' : ''}
-                        onClick={() => previewTheme(theme.slug)}
-                      >
-                        <span className="theme-swatch" style={{ background: theme.colors.bodyBg }}>
-                          <i style={{ background: theme.colors.featureBg }} />
-                          <i style={{ background: theme.colors.accent }} />
-                          <i style={{ background: theme.colors.accent3 }} />
-                        </span>
-                        <strong>{theme.name}</strong>
-                        <small>{theme.description}</small>
-                      </button>
+                    {themeGroups.map((group) => (
+                      <section className="theme-group" key={group.category}>
+                        <h3>{group.category}</h3>
+                        <div className="theme-group-grid">
+                          {group.themes.map((theme) => (
+                            <button
+                              type="button"
+                              key={theme.slug}
+                              className={theme.slug === profileDraft.themeSlug ? 'active' : ''}
+                              onClick={() => previewTheme(theme.slug)}
+                            >
+                              <span className="theme-swatch" style={{ background: theme.colors.bodyBg }}>
+                                <i style={{ background: theme.colors.featureBg }} />
+                                <i style={{ background: theme.colors.accent }} />
+                                <i style={{ background: theme.colors.accent3 }} />
+                              </span>
+                              <strong>{theme.name}</strong>
+                              <small>{theme.description}</small>
+                            </button>
+                          ))}
+                        </div>
+                      </section>
                     ))}
                   </div>
                   <button className="primary-button" type="button" onClick={saveProfile}>
