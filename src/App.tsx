@@ -72,13 +72,15 @@ const blankProductDraft: Omit<Product, 'id' | 'sortOrder' | 'isActive'> = {
   isFavorite: false,
 }
 
+const demoSiteData: SiteData = {
+  profile: demoProfile,
+  links: demoLinks,
+  collections: demoCollections,
+  products: demoProducts,
+}
+
 function App() {
-  const [siteData, setSiteData] = useState<SiteData>({
-    profile: demoProfile,
-    links: demoLinks,
-    collections: demoCollections,
-    products: demoProducts,
-  })
+  const [siteData, setSiteData] = useState<SiteData | null>(hasSupabaseConfig ? null : demoSiteData)
   const [status, setStatus] = useState(
     hasSupabaseConfig ? 'Loading creator edit...' : 'Preview mode with demo data',
   )
@@ -99,8 +101,9 @@ function App() {
       .catch((error) => {
         console.error(error)
         if (isMounted) {
-          setUsingDemoData(true)
+          setSiteData(demoSiteData)
           setStatus('Preview mode with demo data')
+          setUsingDemoData(true)
         }
       })
 
@@ -110,11 +113,26 @@ function App() {
   }, [])
 
   useEffect(() => {
+    if (!siteData) {
+      return
+    }
+
     applyTheme(siteData.profile.themeSlug)
-  }, [siteData.profile.themeSlug])
+  }, [siteData])
 
   const path = window.location.pathname
   const storefrontMatch = path.match(/^\/store\/([^/]+)/)
+
+  if (!siteData) {
+    return (
+      <main className="site-shell loading-screen">
+        <div className="loading-card">
+          <span />
+          <p>Loading Rita Brown...</p>
+        </div>
+      </main>
+    )
+  }
 
   if (path.startsWith('/admin')) {
     return (
