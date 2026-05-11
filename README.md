@@ -1,16 +1,16 @@
 # Rita Brown Link-in-Bio Storefront
 
-A mobile-first personal website for Rita Brown with Linktree-style links, a storefront page for products from any shop, Supabase-backed content, and a Netlify Function that imports product metadata from pasted URLs.
+A mobile-first personal website for Rita Brown with Linktree-style links, a storefront page for products from any shop, Supabase-backed content, and a Cloudflare Pages Function that imports product metadata from pasted URLs.
 
 ## Feature Brainstorm
 
 - Public creator page with profile, social links, featured links, and smooth entrance motion.
 - Storefront-style collection page for non-Amazon links, including product cards, categories, prices, store names, and "Rita pick" badges.
 - Admin route at `/admin` for adding bio links and product cards.
-- Product URL importer powered by `/.netlify/functions/extract-product`, reading JSON-LD and OpenGraph metadata when stores expose it.
+- Product URL importer powered by `/api/extract-product`, reading JSON-LD and OpenGraph metadata when stores expose it.
 - Supabase tables and row-level security for profiles, links, collections, and products.
 - Demo data fallback so the site works before `.env` is available.
-- Netlify routing for `/admin` and `/store/:slug` paths.
+- Cloudflare Pages routing for `/admin` and `/store/:slug` paths.
 
 ## Local Development
 
@@ -19,10 +19,11 @@ npm install
 npm run dev
 ```
 
-For the product importer locally, use Netlify Dev:
+For the product importer locally, use Cloudflare Pages dev after building:
 
 ```bash
-npx netlify dev
+npm run build
+npx wrangler pages dev dist
 ```
 
 ## Environment
@@ -42,10 +43,10 @@ Run `supabase/schema.sql` in the Supabase SQL editor. Then create an authenticat
 
 ## Deploy
 
-This project is ready for Netlify:
+This project is ready for Cloudflare Pages:
 
 - Build command: `npm run build`
-- Publish directory: `dist`
-- Functions directory: `netlify/functions`
+- Build output directory: `dist`
+- Functions directory: `functions`
 
-Add the same environment variables in Netlify before deploying.
+Add the same environment variables in Cloudflare Pages before deploying. See `docs/deploy/cloudflare.md` for the keep-alive Worker setup.

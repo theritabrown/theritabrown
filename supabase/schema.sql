@@ -62,7 +62,7 @@ create table if not exists public.products (
 
 create table if not exists public.keep_alive_pings (
   id uuid primary key default gen_random_uuid(),
-  source text not null default 'netlify-schedule',
+  source text not null default 'cloudflare-cron',
   note text not null default '',
   created_at timestamptz not null default now()
 );
@@ -110,7 +110,7 @@ create policy "Authenticated users read keep alive pings" on public.keep_alive_p
   for select to authenticated using (true);
 
 create or replace function public.record_keep_alive(
-  heartbeat_source text default 'netlify-schedule',
+  heartbeat_source text default 'cloudflare-cron',
   heartbeat_note text default ''
 ) returns timestamptz
 language plpgsql
@@ -122,7 +122,7 @@ declare
 begin
   insert into public.keep_alive_pings (source, note)
   values (
-    coalesce(nullif(heartbeat_source, ''), 'netlify-schedule'),
+    coalesce(nullif(heartbeat_source, ''), 'cloudflare-cron'),
     coalesce(heartbeat_note, '')
   )
   returning created_at into ping_time;

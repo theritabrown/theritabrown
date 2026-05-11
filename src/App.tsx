@@ -719,7 +719,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
     const normalizedImportUrl = normalizeUrl(importUrl)
 
     try {
-      const response = await fetch(`/.netlify/functions/extract-product?url=${encodeURIComponent(normalizedImportUrl)}`)
+      const response = await fetch(`/api/extract-product?url=${encodeURIComponent(normalizedImportUrl)}`)
       const metadata = (await response.json()) as ProductMetadata
 
       if (!response.ok) {

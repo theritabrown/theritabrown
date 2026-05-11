@@ -1,16 +1,24 @@
-import type { Handler } from '@netlify/functions'
 import * as cheerio from 'cheerio'
+
+type JsonObject = Record<string, unknown>
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Content-Type': 'application/json',
 }
 
-type JsonObject = Record<string, unknown>
+export const onRequest: PagesFunction = async ({ request }) => {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers })
+  }
 
-export const handler: Handler = async (event) => {
-  const rawUrl = event.queryStringParameters?.url
+  if (request.method !== 'GET') {
+    return json(405, { description: 'Method not allowed.' })
+  }
+
+  const rawUrl = new URL(request.url).searchParams.get('url')
 
   if (!rawUrl) {
     return json(400, { description: 'Add a product URL to import.' })
@@ -78,12 +86,11 @@ export const handler: Handler = async (event) => {
   }
 }
 
-function json(statusCode: number, body: Record<string, unknown>) {
-  return {
-    statusCode,
+function json(status: number, body: Record<string, unknown>) {
+  return new Response(JSON.stringify(body), {
+    status,
     headers,
-    body: JSON.stringify(body),
-  }
+  })
 }
 
 function readJsonLd($: cheerio.CheerioAPI): JsonObject | JsonObject[] | null {
@@ -130,7 +137,7 @@ function isJsonObject(value: unknown): value is JsonObject {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value))
 }
 
-function firstString(...values: unknown[]) {
+function firstString(...values: unknown[]): string {
   for (const value of values) {
     if (Array.isArray(value)) {
       const nested = firstString(...value)

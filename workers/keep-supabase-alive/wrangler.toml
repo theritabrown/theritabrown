@@ -1,0 +1,6 @@
+name = "theritabrown-keep-supabase-alive"
+main = "index.ts"
+compatibility_date = "2026-05-03"
+
+[triggers]
+crons = [ "34 14 * * *" ]
