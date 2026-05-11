@@ -588,10 +588,17 @@ function ProductCard({ product, compact = false }: { product: Product; compact?:
 }
 
 function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean }) {
+  const allowPreviewAdmin = usingDemoData && isLocalPreviewHost()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isSignedIn, setIsSignedIn] = useState(usingDemoData)
-  const [authMessage, setAuthMessage] = useState(usingDemoData ? 'Preview admin enabled until Supabase is connected.' : '')
+  const [isSignedIn, setIsSignedIn] = useState(allowPreviewAdmin)
+  const [authMessage, setAuthMessage] = useState(
+    allowPreviewAdmin
+      ? 'Preview admin enabled until Supabase is connected.'
+      : usingDemoData
+        ? 'Supabase is not configured for this deployment.'
+        : '',
+  )
   const [profileDraft, setProfileDraft] = useState(data.profile)
   const [linkEdits, setLinkEdits] = useState(data.links)
   const [collectionEdits, setCollectionEdits] = useState(data.collections)
@@ -619,8 +626,13 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
     setAuthMessage('Signing in...')
 
     if (!supabase) {
-      setIsSignedIn(true)
-      setAuthMessage('Preview admin enabled. Add Supabase env vars for real auth.')
+      if (allowPreviewAdmin) {
+        setIsSignedIn(true)
+        setAuthMessage('Preview admin enabled. Add Supabase env vars for real auth.')
+        return
+      }
+
+      setAuthMessage('Supabase is not configured. Add Cloudflare Pages environment variables and redeploy.')
       return
     }
 
@@ -1474,6 +1486,10 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
       )}
     </main>
   )
+}
+
+function isLocalPreviewHost() {
+  return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)
 }
 
 export default App
