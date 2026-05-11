@@ -442,10 +442,11 @@ function PublicHome({
 
 function BioLinkCard({ link, index }: { link: BioLink; index: number }) {
   const isInternal = link.href.startsWith('/')
+  const isFirstLink = index === 0
 
   return (
     <a
-      className={`bio-link ${link.kind}`}
+      className={`bio-link ${link.kind} ${isFirstLink ? 'featured-position' : ''}`}
       href={link.href}
       target={isInternal ? undefined : '_blank'}
       rel={isInternal ? undefined : 'noreferrer'}
