@@ -224,7 +224,7 @@
   animation: rise 540ms ease both;
 }
 
-.bio-link.featured-order {
+.bio-link.featured-first {
   border-color: color-mix(in srgb, var(--accent) 68%, var(--feature-bg));
   background: var(--feature-bg);
   color: var(--feature-ink);
@@ -244,8 +244,8 @@
   background: color-mix(in srgb, var(--ink) 8%, transparent);
 }
 
-.bio-link.featured-order .link-icon,
-.bio-link.featured-order .arrow {
+.bio-link.featured-first .link-icon,
+.bio-link.featured-first .arrow {
   background: color-mix(in srgb, var(--feature-ink) 14%, transparent);
 }
 
