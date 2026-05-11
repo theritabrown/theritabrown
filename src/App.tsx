@@ -588,6 +588,30 @@ function ProductCard({ product, compact = false }: { product: Product; compact?:
   )
 }
 
+function sortBioLinks(links: BioLink[]) {
+  return [...links].sort((a, b) => a.sortOrder - b.sortOrder)
+}
+
+function normalizeBioLinkOrder(links: BioLink[], movedLinkId: string) {
+  const movedLink = links.find((link) => link.id === movedLinkId)
+
+  if (!movedLink) {
+    return sortBioLinks(links).map((link, index) => ({ ...link, sortOrder: index + 1 }))
+  }
+
+  const targetIndex = Math.min(Math.max(Math.round(movedLink.sortOrder || 1), 1), links.length) - 1
+  const remainingLinks = links
+    .filter((link) => link.id !== movedLinkId)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+  const reorderedLinks = [
+    ...remainingLinks.slice(0, targetIndex),
+    movedLink,
+    ...remainingLinks.slice(targetIndex),
+  ]
+
+  return reorderedLinks.map((link, index) => ({ ...link, sortOrder: index + 1 }))
+}
+
 function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean }) {
   const allowPreviewAdmin = usingDemoData && isLocalPreviewHost()
   const [email, setEmail] = useState('')
@@ -651,16 +675,21 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
     event.preventDefault()
     setSaveMessage('Saving link...')
     try {
-      await createBioLink({
+      const savedLink = await createBioLink({
         label: linkDraft.label,
         href: linkDraft.href,
         description: linkDraft.description,
         icon: linkDraft.icon,
         kind: linkDraft.kind,
         collectionSlug: linkDraft.collectionSlug || undefined,
+        sortOrder: linkEdits.length + 1,
       })
+      const normalizedLinks = normalizeBioLinkOrder([...linkEdits, savedLink], savedLink.id)
+      const savedLinks = await Promise.all(normalizedLinks.map(updateBioLink))
       setLinkDraft(blankLinkDraft)
-      setSaveMessage('Link saved. Refresh to see live content.')
+      setLinkEdits(sortBioLinks(savedLinks))
+      setEditingLinkId(savedLink.id)
+      setSaveMessage('Link saved.')
     } catch (error) {
       setSaveMessage(error instanceof Error ? error.message : 'Could not save link yet.')
     }
@@ -669,10 +698,13 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
   async function saveExistingLink(link: BioLink) {
     setSaveMessage(`Saving ${link.label}...`)
     try {
-      const savedLink = await updateBioLink(link)
-      setLinkEdits((current) => current.map((item) => (item.id === link.id ? savedLink : item)))
+      const normalizedLinks = normalizeBioLinkOrder(linkEdits, link.id)
+      const savedLinks = await Promise.all(normalizedLinks.map(updateBioLink))
+      const savedLink = savedLinks.find((item) => item.id === link.id) ?? savedLinks[0]
+
+      setLinkEdits(sortBioLinks(savedLinks))
       setEditingLinkId(savedLink.id)
-      setSaveMessage(`${savedLink.label} saved.`)
+      setSaveMessage(`${savedLink.label} saved and display order updated.`)
     } catch (error) {
       setSaveMessage(error instanceof Error ? error.message : 'Could not save link.')
     }
@@ -688,7 +720,13 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
     setSaveMessage(`Deleting ${link.label}...`)
     try {
       await deleteBioLink(link)
-      setLinkEdits((current) => current.filter((item) => item.id !== link.id))
+      const normalizedLinks = linkEdits
+        .filter((item) => item.id !== link.id)
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((item, index) => ({ ...item, sortOrder: index + 1 }))
+      const savedLinks = await Promise.all(normalizedLinks.map(updateBioLink))
+
+      setLinkEdits(sortBioLinks(savedLinks))
       setSaveMessage(`${link.label} deleted.`)
     } catch (error) {
       setSaveMessage(error instanceof Error ? error.message : 'Could not delete link.')

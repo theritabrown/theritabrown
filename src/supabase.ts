@@ -54,24 +54,31 @@ export async function loadSiteData() {
   }
 }
 
-export async function createBioLink(link: Omit<BioLink, 'id' | 'sortOrder' | 'isActive'>) {
+export async function createBioLink(link: Omit<BioLink, 'id' | 'isActive'>) {
   if (!supabase) {
     throw new Error('Supabase is not configured yet.')
   }
 
-  const { error } = await supabase.from('bio_links').insert({
-    label: link.label,
-    description: link.description,
-    href: normalizeUrl(link.href),
-    kind: link.kind,
-    icon: link.icon,
-    collection_slug: link.collectionSlug || null,
-    is_active: true,
-  })
+  const { data, error } = await supabase
+    .from('bio_links')
+    .insert({
+      label: link.label,
+      description: link.description,
+      href: normalizeUrl(link.href),
+      kind: link.kind,
+      icon: link.icon,
+      collection_slug: link.collectionSlug || null,
+      is_active: true,
+      sort_order: link.sortOrder,
+    })
+    .select('*')
+    .single()
 
   if (error) {
     throw error
   }
+
+  return mapBioLink(data)
 }
 
 export async function updateProfile(profile: Profile) {
