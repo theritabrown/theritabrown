@@ -488,9 +488,14 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
   const [editingProductId, setEditingProductId] = useState<string | null>(null)
   const [linkDraft, setLinkDraft] = useState<AdminDraft>(blankLinkDraft)
   const [productDraft, setProductDraft] = useState(blankProductDraft)
+  const [isAddingProductCategory, setIsAddingProductCategory] = useState(false)
   const [importUrl, setImportUrl] = useState('')
   const [isImporting, setIsImporting] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
+  const productCategoryOptions = useMemo(
+    () => Array.from(new Set(productEdits.map((product) => product.category).filter(Boolean))).sort(),
+    [productEdits],
+  )
   const themeGroups = ['Editorial', 'Soft', 'Colorful', 'Dark', 'Minimal'].map((category) => ({
     category,
     themes: themes.filter((theme) => theme.category === category),
@@ -632,6 +637,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
       setProductEdits((current) => [...current, savedProduct].sort((a, b) => a.sortOrder - b.sortOrder))
       setEditingProductId(savedProduct.id)
       setProductDraft(blankProductDraft)
+      setIsAddingProductCategory(false)
       setImportUrl('')
       setSaveMessage(`${savedProduct.title} saved.`)
     } catch (error) {
@@ -1156,7 +1162,36 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                   </label>
                   <label>
                     Category
-                    <input value={productDraft.category} onChange={(event) => setProductDraft({ ...productDraft, category: event.target.value })} />
+                    <span className="category-select-stack">
+                      <select
+                        value={isAddingProductCategory ? '__new__' : productDraft.category}
+                        onChange={(event) => {
+                          if (event.target.value === '__new__') {
+                            setIsAddingProductCategory(true)
+                            setProductDraft({ ...productDraft, category: '' })
+                            return
+                          }
+
+                          setIsAddingProductCategory(false)
+                          setProductDraft({ ...productDraft, category: event.target.value })
+                        }}
+                      >
+                        {productCategoryOptions.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                        <option value="__new__">Add new category</option>
+                      </select>
+                      {isAddingProductCategory ? (
+                        <input
+                          value={productDraft.category}
+                          onChange={(event) => setProductDraft({ ...productDraft, category: event.target.value })}
+                          placeholder="Type new category"
+                          required
+                        />
+                      ) : null}
+                    </span>
                   </label>
                 </div>
                 <details className="advanced-settings">
