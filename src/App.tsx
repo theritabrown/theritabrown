@@ -114,6 +114,7 @@ const iconMap = {
   linktree: SiLinktree,
   walmart: SiWalmart,
   target: SiTarget,
+  shein: SheinIcon,
   shopify: SiShopify,
   home: Home,
   link: LinkIcon,
@@ -160,6 +161,7 @@ function getLinkIconKey(link: Pick<BioLink, 'href' | 'icon'>) {
   if (href.includes('linktr.ee') || href.includes('linktree')) return 'linktree'
   if (href.includes('walmart.com') || href.includes('walmrt.us')) return 'walmart'
   if (href.includes('target.com')) return 'target'
+  if (href.includes('shein.com')) return 'shein'
   if (href.includes('etsy.com')) return 'etsy'
   if (href.includes('shopify.com') || href.includes('myshopify.com')) return 'shopify'
 
@@ -169,9 +171,36 @@ function getLinkIconKey(link: Pick<BioLink, 'href' | 'icon'>) {
 function LinkIconGlyph({ link, size }: { link: Pick<BioLink, 'href' | 'icon'>; size: number }) {
   const iconKey = getLinkIconKey(link)
   const Icon = iconMap[iconKey as keyof typeof iconMap] ?? LinkIcon
-  const iconSize = iconKey === 'walmart' ? Math.round(size * 1.45) : size
+  const iconSize = iconKey === 'walmart' || iconKey === 'shein' ? Math.round(size * 1.45) : size
 
   return <Icon size={iconSize} />
+}
+
+function SheinIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      width={Math.round(size * 2.4)}
+      height={size}
+      viewBox="0 0 96 40"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <text
+        x="48"
+        y="27"
+        fill="currentColor"
+        fontFamily="Arial, Helvetica, sans-serif"
+        fontSize="23"
+        fontWeight="900"
+        letterSpacing="2"
+        textAnchor="middle"
+      >
+        SHEIN
+      </text>
+    </svg>
+  )
 }
 
 function isSocialProfileLink(link: BioLink) {
@@ -876,6 +905,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                                     <option value="linktree">Linktree</option>
                                     <option value="walmart">Walmart</option>
                                     <option value="target">Target</option>
+                                    <option value="shein">Shein</option>
                                     <option value="etsy">Etsy</option>
                                     <option value="shopify">Shopify</option>
                                   </select>
@@ -965,6 +995,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                         <option value="linktree">Linktree</option>
                         <option value="walmart">Walmart</option>
                         <option value="target">Target</option>
+                        <option value="shein">Shein</option>
                         <option value="etsy">Etsy</option>
                         <option value="shopify">Shopify</option>
                       </select>
