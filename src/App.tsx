@@ -33,7 +33,6 @@ import {
   SiTarget,
   SiTiktok,
   SiTwitch,
-  SiWalmart,
   SiWhatsapp,
   SiYoutube,
 } from 'react-icons/si'
@@ -112,7 +111,8 @@ const iconMap = {
   patreon: SiPatreon,
   etsy: SiEtsy,
   linktree: SiLinktree,
-  walmart: SiWalmart,
+  amazon: AmazonIcon,
+  walmart: WalmartIcon,
   target: SiTarget,
   shein: SheinIcon,
   shopify: SiShopify,
@@ -159,6 +159,7 @@ function getLinkIconKey(link: Pick<BioLink, 'href' | 'icon'>) {
   if (href.includes('substack.com')) return 'substack'
   if (href.includes('patreon.com')) return 'patreon'
   if (href.includes('linktr.ee') || href.includes('linktree')) return 'linktree'
+  if (href.includes('amazon.com') || href.includes('amzn.to')) return 'amazon'
   if (href.includes('walmart.com') || href.includes('walmrt.us')) return 'walmart'
   if (href.includes('target.com')) return 'target'
   if (href.includes('shein.com')) return 'shein'
@@ -171,9 +172,67 @@ function getLinkIconKey(link: Pick<BioLink, 'href' | 'icon'>) {
 function LinkIconGlyph({ link, size }: { link: Pick<BioLink, 'href' | 'icon'>; size: number }) {
   const iconKey = getLinkIconKey(link)
   const Icon = iconMap[iconKey as keyof typeof iconMap] ?? LinkIcon
-  const iconSize = iconKey === 'walmart' || iconKey === 'shein' ? Math.round(size * 1.45) : size
+  const iconSize = iconKey === 'shein' ? Math.round(size * 1.45) : size
 
   return <Icon size={iconSize} />
+}
+
+function AmazonIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      width={size}
+      height={size}
+      viewBox="0 0 40 40"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <text
+        x="20"
+        y="24"
+        fill="currentColor"
+        fontFamily="Arial, Helvetica, sans-serif"
+        fontSize="24"
+        fontWeight="900"
+        textAnchor="middle"
+      >
+        a
+      </text>
+      <path
+        d="M11 28c5.5 3.3 12.3 3.3 18 0"
+        stroke="currentColor"
+        strokeWidth="2.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function WalmartIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      width={size}
+      height={size}
+      viewBox="0 0 40 40"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <text
+        x="20"
+        y="28"
+        fill="currentColor"
+        fontFamily="Arial, Helvetica, sans-serif"
+        fontSize="28"
+        fontWeight="950"
+        textAnchor="middle"
+      >
+        W
+      </text>
+    </svg>
+  )
 }
 
 function SheinIcon({ size = 24 }: { size?: number }) {
@@ -903,6 +962,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                                     <option value="substack">Substack</option>
                                     <option value="patreon">Patreon</option>
                                     <option value="linktree">Linktree</option>
+                                    <option value="amazon">Amazon</option>
                                     <option value="walmart">Walmart</option>
                                     <option value="target">Target</option>
                                     <option value="shein">Shein</option>
@@ -993,6 +1053,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                         <option value="substack">Substack</option>
                         <option value="patreon">Patreon</option>
                         <option value="linktree">Linktree</option>
+                        <option value="amazon">Amazon</option>
                         <option value="walmart">Walmart</option>
                         <option value="target">Target</option>
                         <option value="shein">Shein</option>
