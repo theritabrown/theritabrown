@@ -243,6 +243,7 @@ function App() {
 
   const path = window.location.pathname
   const storefrontMatch = path.match(/^\/store\/([^/]+)/)
+  const storefrontSearch = new URLSearchParams(window.location.search)
 
   if (!siteData) {
     return (
@@ -269,6 +270,7 @@ function App() {
     return (
       <Storefront
         collectionSlug={storefrontMatch[1]}
+        storeSlug={storefrontSearch.get('store') ?? undefined}
         collections={siteData.collections}
         products={siteData.products}
         profile={siteData.profile}
@@ -377,17 +379,31 @@ function BioLinkCard({ link, index }: { link: BioLink; index: number }) {
 
 function Storefront({
   collectionSlug,
+  storeSlug,
   collections,
   products,
   profile,
 }: {
   collectionSlug: string
+  storeSlug?: string
   collections: ProductCollection[]
   products: Product[]
   profile: Profile
 }) {
-  const collection = collections.find((item) => item.slug === collectionSlug) ?? collections[0]
-  const collectionProducts = products.filter((product) => product.isActive && product.collectionSlug === collection?.slug)
+  const collection = collections.find((item) => item.slug === collectionSlug)
+  const routeStoreProduct = products.find((product) => product.isActive && slugifyStoreName(product.storeName) === collectionSlug)
+  const queryStoreProduct = storeSlug
+    ? products.find((product) => product.isActive && slugifyStoreName(product.storeName) === storeSlug)
+    : undefined
+  const storeProduct = queryStoreProduct ?? (!collection ? routeStoreProduct : undefined)
+  const activeStoreSlug = storeProduct ? slugifyStoreName(storeProduct.storeName) : storeSlug
+  const baseCollection = collection ?? collections[0]
+  const collectionProducts = products.filter((product) => {
+    const matchesCollection = product.isActive && product.collectionSlug === baseCollection?.slug
+    const matchesStore = activeStoreSlug ? slugifyStoreName(product.storeName) === activeStoreSlug : true
+
+    return matchesCollection && matchesStore
+  })
   const [activeCategory, setActiveCategory] = useState('All')
   const categories = useMemo(
     () => ['All', ...Array.from(new Set(collectionProducts.map((product) => product.category)))],
@@ -398,7 +414,7 @@ function Storefront({
       ? collectionProducts
       : collectionProducts.filter((product) => product.category === activeCategory)
 
-  if (!collection) {
+  if (!baseCollection || (!collection && !storeProduct)) {
     return (
       <main className="site-shell empty-state">
         <a className="back-link" href="/">
@@ -418,11 +434,11 @@ function Storefront({
           Back
         </a>
         <div className="store-hero-image">
-          <img src={collection.heroImageUrl} alt="" />
+          <img src={baseCollection.heroImageUrl} alt="" />
         </div>
-        <p className="small-label">{profile.name}'s storefront</p>
-        <h1>{collection.title}</h1>
-        <p>{collection.description}</p>
+        <p className="small-label">{storeProduct ? `${storeProduct.storeName} picks` : `${profile.name}'s storefront`}</p>
+        <h1>{storeProduct ? `${storeProduct.storeName} Finds` : baseCollection.title}</h1>
+        <p>{storeProduct ? `Shop ${storeProduct.storeName} products from ${profile.name}'s curated finds.` : baseCollection.description}</p>
       </header>
 
       <div className="category-tabs" aria-label="Product categories">
@@ -438,13 +454,22 @@ function Storefront({
         ))}
       </div>
 
-      <section className={`product-grid product-grid-${collection.displayStyle}`} aria-label="Products">
+      <section className={`product-grid product-grid-${baseCollection.displayStyle}`} aria-label="Products">
         {visibleProducts.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
       </section>
     </main>
   )
+}
+
+function slugifyStoreName(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }
 
 function ProductCard({ product, compact = false }: { product: Product; compact?: boolean }) {
