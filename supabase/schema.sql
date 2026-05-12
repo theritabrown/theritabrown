@@ -37,12 +37,16 @@ create table if not exists public.bio_links (
   href text not null,
   kind text not null default 'standard' check (kind in ('social', 'feature', 'storefront', 'standard')),
   icon text not null default 'link',
+  is_private_storefront boolean not null default false,
   collection_slug text references public.product_collections(slug) on update cascade on delete set null,
   is_active boolean not null default true,
   sort_order integer not null default 100,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.bio_links
+  add column if not exists is_private_storefront boolean not null default false;
 
 create table if not exists public.products (
   id uuid primary key default gen_random_uuid(),

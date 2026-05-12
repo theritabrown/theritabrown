@@ -121,6 +121,33 @@ const iconMap = {
   link: LinkIcon,
 }
 
+const privateStorefrontOptions = [
+  {
+    name: 'Shein',
+    slug: 'shein',
+    icon: 'shein',
+    domains: ['shein.com'],
+  },
+  {
+    name: 'Target',
+    slug: 'target',
+    icon: 'target',
+    domains: ['target.com'],
+  },
+  {
+    name: 'Walmart',
+    slug: 'walmart',
+    icon: 'walmart',
+    domains: ['walmart.com', 'walmrt.us'],
+  },
+  {
+    name: 'Amazon',
+    slug: 'amazon',
+    icon: 'amazon',
+    domains: ['amazon.com', 'amzn.to'],
+  },
+] as const
+
 const socialIconKeys = new Set([
   'instagram',
   'tiktok',
@@ -173,7 +200,7 @@ function getLinkIconKey(link: Pick<BioLink, 'href' | 'icon'>) {
 function LinkIconGlyph({ link, size }: { link: Pick<BioLink, 'href' | 'icon'>; size: number }) {
   const iconKey = getLinkIconKey(link)
   const Icon = iconMap[iconKey as keyof typeof iconMap] ?? LinkIcon
-  const iconSize = iconKey === 'shein' ? Math.round(size * 1.45) : size
+  const iconSize = size
 
   return <Icon size={iconSize} />
 }
@@ -241,23 +268,22 @@ function SheinIcon({ size = 24 }: { size?: number }) {
     <svg
       aria-hidden="true"
       focusable="false"
-      width={Math.round(size * 2.4)}
+      width={size}
       height={size}
-      viewBox="0 0 96 40"
+      viewBox="0 0 40 40"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
       <text
-        x="48"
-        y="27"
+        x="20"
+        y="28"
         fill="currentColor"
         fontFamily="Arial, Helvetica, sans-serif"
-        fontSize="23"
-        fontWeight="900"
-        letterSpacing="2"
+        fontSize="29"
+        fontWeight="950"
         textAnchor="middle"
       >
-        SHEIN
+        S
       </text>
     </svg>
   )
@@ -274,6 +300,7 @@ const blankLinkDraft: AdminDraft = {
   icon: 'link',
   kind: 'standard',
   collectionSlug: '',
+  isPrivateStorefront: false,
 }
 
 const blankProductDraft: Omit<Product, 'id' | 'sortOrder' | 'isActive'> = {
@@ -617,6 +644,77 @@ function normalizeBioLinkOrder(links: BioLink[], movedLinkId: string) {
   return reorderedLinks.map((link, index) => ({ ...link, sortOrder: index + 1 }))
 }
 
+function detectPrivateStorefront(value: string) {
+  const normalized = value.trim().toLowerCase()
+
+  if (!normalized) {
+    return null
+  }
+
+  return privateStorefrontOptions.find((store) => {
+    return (
+      normalized === store.slug ||
+      normalized.includes(`/store/${store.slug}`) ||
+      normalized.includes(store.name.toLowerCase()) ||
+      store.domains.some((domain) => normalized.includes(domain))
+    )
+  }) ?? null
+}
+
+function privateStorefrontSlug(link: Pick<BioLink, 'href' | 'label' | 'icon' | 'isPrivateStorefront'>) {
+  if (!link.isPrivateStorefront) {
+    return null
+  }
+
+  const routeMatch = link.href.match(/\/store\/([^/?#]+)/)
+  if (routeMatch?.[1]) {
+    return routeMatch[1]
+  }
+
+  return detectPrivateStorefront(`${link.href} ${link.label} ${link.icon}`)?.slug ?? null
+}
+
+function storeNameSlug(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+function configurePrivateStorefront<T extends Pick<BioLink, 'href' | 'label' | 'description' | 'kind' | 'icon' | 'collectionSlug' | 'isPrivateStorefront'>>(
+  link: T,
+  enabled: boolean,
+) {
+  if (!enabled) {
+    return { ...link, isPrivateStorefront: false }
+  }
+
+  const detectedStore = detectPrivateStorefront(`${link.href} ${link.label} ${link.icon}`)
+  const slug = detectedStore?.slug ?? storeNameSlug(link.label || link.href)
+  const name = detectedStore?.name ?? titleFromSlug(slug)
+
+  return {
+    ...link,
+    label: link.label || `${name} Storefront`,
+    description: link.description || `Shop my ${name} finds.`,
+    href: `/store/${slug}`,
+    kind: 'storefront' as const,
+    icon: detectedStore?.icon ?? 'store',
+    collectionSlug: '',
+    isPrivateStorefront: true,
+  }
+}
+
+function titleFromSlug(slug: string) {
+  return slug
+    .split('-')
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(' ')
+}
+
 function ImageSourceField({
   label,
   value,
@@ -711,6 +809,10 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
     () => Array.from(new Set(productEdits.map((product) => product.category).filter(Boolean))).sort(),
     [productEdits],
   )
+  const privateStorefrontSlugs = useMemo(
+    () => new Set(linkEdits.map(privateStorefrontSlug).filter((slug): slug is string => Boolean(slug))),
+    [linkEdits],
+  )
   const themeGroups = ['Editorial', 'Soft', 'Colorful', 'Dark', 'Minimal'].map((category) => ({
     category,
     themes: themes.filter((theme) => theme.category === category),
@@ -745,17 +847,25 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
     event.preventDefault()
     setSaveMessage('Saving link...')
     try {
+      const preparedLink = configurePrivateStorefront(linkDraft, linkDraft.isPrivateStorefront)
       const savedLink = await createBioLink({
-        label: linkDraft.label,
-        href: linkDraft.href,
-        description: linkDraft.description,
-        icon: linkDraft.icon,
-        kind: linkDraft.kind,
-        collectionSlug: linkDraft.collectionSlug || undefined,
+        label: preparedLink.label,
+        href: preparedLink.href,
+        description: preparedLink.description,
+        icon: preparedLink.icon,
+        kind: preparedLink.kind,
+        collectionSlug: preparedLink.collectionSlug || undefined,
+        isPrivateStorefront: preparedLink.isPrivateStorefront,
         sortOrder: linkEdits.length + 1,
       })
       const normalizedLinks = normalizeBioLinkOrder([...linkEdits, savedLink], savedLink.id)
       const savedLinks = await Promise.all(normalizedLinks.map(updateBioLink))
+      const privateSlug = privateStorefrontSlug(savedLink)
+
+      if (privateSlug) {
+        await applyPrivateStorefrontRule(privateSlug)
+      }
+
       setLinkDraft(blankLinkDraft)
       setLinkEdits(sortBioLinks(savedLinks))
       setEditingLinkId(savedLink.id)
@@ -768,9 +878,16 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
   async function saveExistingLink(link: BioLink) {
     setSaveMessage(`Saving ${link.label}...`)
     try {
-      const normalizedLinks = normalizeBioLinkOrder(linkEdits, link.id)
+      const preparedLink = configurePrivateStorefront(link, link.isPrivateStorefront)
+      const preparedLinks = linkEdits.map((item) => (item.id === link.id ? preparedLink : item))
+      const normalizedLinks = normalizeBioLinkOrder(preparedLinks, link.id)
       const savedLinks = await Promise.all(normalizedLinks.map(updateBioLink))
       const savedLink = savedLinks.find((item) => item.id === link.id) ?? savedLinks[0]
+      const privateSlug = privateStorefrontSlug(savedLink)
+
+      if (privateSlug) {
+        await applyPrivateStorefrontRule(privateSlug)
+      }
 
       setLinkEdits(sortBioLinks(savedLinks))
       setEditingLinkId(savedLink.id)
@@ -831,6 +948,23 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
     setCollectionEdits((current) => current.map((item) => (item.slug === slug ? { ...item, ...patch } : item)))
   }
 
+  async function applyPrivateStorefrontRule(storeSlug: string) {
+    const updatedProducts = productEdits.map((product) => {
+      return storeNameSlug(product.storeName) === storeSlug
+        ? { ...product, showInMainCollection: false }
+        : product
+    })
+    const affectedProducts = updatedProducts.filter((product) => {
+      const previousProduct = productEdits.find((item) => item.id === product.id)
+      return previousProduct && previousProduct.showInMainCollection !== product.showInMainCollection
+    })
+
+    if (affectedProducts.length) {
+      const savedProducts = await Promise.all(affectedProducts.map(updateProduct))
+      setProductEdits((current) => current.map((product) => savedProducts.find((saved) => saved.id === product.id) ?? product))
+    }
+  }
+
   async function importProduct() {
     if (!importUrl) {
       return
@@ -854,6 +988,9 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
         price: metadata.price || current.price,
         imageUrl: metadata.imageUrl || current.imageUrl,
         storeName: metadata.storeName || current.storeName,
+        showInMainCollection: metadata.storeName && privateStorefrontSlugs.has(storeNameSlug(metadata.storeName))
+          ? false
+          : current.showInMainCollection,
       }))
       setSaveMessage('Product details imported. Review and save.')
     } catch (error) {
@@ -867,7 +1004,12 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
     event.preventDefault()
     setSaveMessage('Saving product...')
     try {
-      const savedProduct = await createProduct(productDraft)
+      const savedProduct = await createProduct({
+        ...productDraft,
+        showInMainCollection: privateStorefrontSlugs.has(storeNameSlug(productDraft.storeName))
+          ? false
+          : productDraft.showInMainCollection,
+      })
       setProductEdits((current) => [...current, savedProduct].sort((a, b) => a.sortOrder - b.sortOrder))
       setEditingProductId(savedProduct.id)
       setProductDraft(blankProductDraft)
@@ -882,7 +1024,12 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
   async function saveExistingProduct(product: Product) {
     setSaveMessage(`Saving ${product.title}...`)
     try {
-      const savedProduct = await updateProduct(product)
+      const savedProduct = await updateProduct({
+        ...product,
+        showInMainCollection: privateStorefrontSlugs.has(storeNameSlug(product.storeName))
+          ? false
+          : product.showInMainCollection,
+      })
       setProductEdits((current) => current.map((item) => (item.id === product.id ? savedProduct : item)))
       setEditingProductId(savedProduct.id)
       setSaveMessage(`${savedProduct.title} saved.`)
@@ -1044,6 +1191,11 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                                 <input value={link.href} onChange={(event) => updateLinkDraft(link.id, { href: event.target.value })} />
                               </label>
                             </div>
+                            {detectPrivateStorefront(`${link.href} ${link.label}`) ? (
+                              <p className="smart-hint">
+                                Store detected. Mark this as a private storefront to use a filtered `/store/...` page and hide matching products from Shop My Finds.
+                              </p>
+                            ) : null}
                             <label>
                               Short description
                               <textarea value={link.description} onChange={(event) => updateLinkDraft(link.id, { description: event.target.value })} />
@@ -1102,6 +1254,14 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                                   <input type="number" value={link.sortOrder} onChange={(event) => updateLinkDraft(link.id, { sortOrder: Number(event.target.value) })} />
                                 </label>
                               </div>
+                              <label className="checkbox-label">
+                                <input
+                                  type="checkbox"
+                                  checked={link.isPrivateStorefront}
+                                  onChange={(event) => updateLinkDraft(link.id, configurePrivateStorefront(link, event.target.checked))}
+                                />
+                                Private storefront: hide matching store products from Shop My Finds
+                              </label>
                               <button type="button" className="danger-button" onClick={() => removeExistingLink(link)}>
                                 <Trash2 size={16} />
                                 Delete permanently
@@ -1135,6 +1295,11 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                     <input value={linkDraft.href} onChange={(event) => setLinkDraft({ ...linkDraft, href: event.target.value })} required />
                   </label>
                 </div>
+                {detectPrivateStorefront(`${linkDraft.href} ${linkDraft.label}`) ? (
+                  <p className="smart-hint">
+                    Store detected. Use Private storefront to create a filtered `/store/...` page for this store.
+                  </p>
+                ) : null}
                 <label>
                   Short description
                   <textarea value={linkDraft.description} onChange={(event) => setLinkDraft({ ...linkDraft, description: event.target.value })} />
@@ -1190,6 +1355,14 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                       placeholder="shop-my-finds"
                       onChange={(event) => setLinkDraft({ ...linkDraft, collectionSlug: event.target.value })}
                     />
+                  </label>
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={linkDraft.isPrivateStorefront}
+                      onChange={(event) => setLinkDraft(configurePrivateStorefront(linkDraft, event.target.checked))}
+                    />
+                    Private storefront: hide matching store products from Shop My Finds
                   </label>
                 </details>
                 <button className="primary-button" type="submit">

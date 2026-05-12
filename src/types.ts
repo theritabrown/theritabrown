@@ -22,6 +22,7 @@ export type BioLink = {
   href: string
   kind: LinkKind
   icon: string
+  isPrivateStorefront: boolean
   isActive: boolean
   sortOrder: number
   collectionSlug?: string
@@ -68,4 +69,5 @@ export type AdminDraft = {
   icon: string
   kind: LinkKind
   collectionSlug: string
+  isPrivateStorefront: boolean
 }

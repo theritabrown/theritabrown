@@ -1327,6 +1327,18 @@
   font-weight: 800;
 }
 
+.smart-hint {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line));
+  border-radius: 14px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--accent-2) 14%, var(--panel-strong));
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .snapshot-list {
   display: flex;
   flex-wrap: wrap;
