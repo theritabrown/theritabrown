@@ -66,8 +66,11 @@
 }
 
 .profile-card {
+  --profile-hero-height: 176px;
+  --profile-hero-bleed: clamp(150px, 34vw, 230px);
+
   position: relative;
-  overflow: visible;
+  overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--accent) 42%, transparent);
   border-radius: 26px;
   background: var(--panel);
@@ -78,7 +81,7 @@
 
 .profile-art {
   position: relative;
-  height: 176px;
+  height: var(--profile-hero-height);
   overflow: visible;
   isolation: isolate;
 }
@@ -87,26 +90,26 @@
   position: absolute;
   inset: 0 0 auto;
   width: 100%;
-  height: calc(100% + 76px);
+  height: calc(var(--profile-hero-height) + var(--profile-hero-bleed));
   border-radius: 26px 26px 0 0;
   object-fit: cover;
+  object-position: center top;
   z-index: 0;
 }
 
 .profile-art::after {
   content: '';
   position: absolute;
-  right: 0;
-  bottom: -76px;
-  left: 0;
+  inset: 0 0 auto;
   z-index: 1;
-  height: 170px;
+  height: calc(var(--profile-hero-height) + var(--profile-hero-bleed));
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--panel) 0%, transparent) 0%,
-    color-mix(in srgb, var(--panel) 18%, transparent) 28%,
-    color-mix(in srgb, var(--panel) 72%, transparent) 58%,
-    var(--panel) 88%
+    color-mix(in srgb, var(--panel) 4%, transparent) 36%,
+    color-mix(in srgb, var(--panel) 46%, transparent) 58%,
+    color-mix(in srgb, var(--panel) 86%, transparent) 76%,
+    var(--panel) 94%
   );
   border-radius: 26px 26px 0 0;
   pointer-events: none;
