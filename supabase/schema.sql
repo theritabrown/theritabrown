@@ -54,11 +54,15 @@ create table if not exists public.products (
   href text not null,
   category text not null default 'Finds',
   is_favorite boolean not null default false,
+  show_in_main_collection boolean not null default true,
   is_active boolean not null default true,
   sort_order integer not null default 100,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.products
+  add column if not exists show_in_main_collection boolean not null default true;
 
 create table if not exists public.keep_alive_pings (
   id uuid primary key default gen_random_uuid(),
@@ -72,6 +76,19 @@ alter table public.product_collections enable row level security;
 alter table public.bio_links enable row level security;
 alter table public.products enable row level security;
 alter table public.keep_alive_pings enable row level security;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'site-images',
+  'site-images',
+  true,
+  5242880,
+  array['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 drop policy if exists "Public can read profile" on public.profiles;
 create policy "Public can read profile" on public.profiles
@@ -108,6 +125,32 @@ create policy "Authenticated users manage products" on public.products
 drop policy if exists "Authenticated users read keep alive pings" on public.keep_alive_pings;
 create policy "Authenticated users read keep alive pings" on public.keep_alive_pings
   for select to authenticated using (true);
+
+drop policy if exists "Public can read site images" on storage.objects;
+create policy "Public can read site images" on storage.objects
+  for select using (bucket_id = 'site-images');
+
+drop policy if exists "Authenticated users upload site images" on storage.objects;
+create policy "Authenticated users upload site images" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'site-images'
+    and lower(storage.extension(name)) in ('jpg', 'jpeg', 'png', 'webp', 'gif')
+  );
+
+drop policy if exists "Authenticated users update site images" on storage.objects;
+create policy "Authenticated users update site images" on storage.objects
+  for update to authenticated
+  using (bucket_id = 'site-images')
+  with check (
+    bucket_id = 'site-images'
+    and lower(storage.extension(name)) in ('jpg', 'jpeg', 'png', 'webp', 'gif')
+  );
+
+drop policy if exists "Authenticated users delete site images" on storage.objects;
+create policy "Authenticated users delete site images" on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'site-images');
 
 create or replace function public.record_keep_alive(
   heartbeat_source text default 'cloudflare-cron',

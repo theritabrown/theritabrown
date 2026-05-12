@@ -47,6 +47,7 @@ export type Product = {
   href: string
   category: string
   isFavorite: boolean
+  showInMainCollection: boolean
   isActive: boolean
   sortOrder: number
 }

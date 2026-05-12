@@ -51,6 +51,7 @@ import {
   updateCollectionSettings,
   updateProduct,
   updateProfile,
+  uploadSiteImage,
 } from './supabase'
 import { applyTheme, themes } from './themes'
 import type { AdminDraft, BioLink, Product, ProductCollection, ProductDisplayStyle, ProductMetadata, Profile } from './types'
@@ -284,6 +285,7 @@ const blankProductDraft: Omit<Product, 'id' | 'sortOrder' | 'isActive'> = {
   href: '',
   category: 'Finds',
   isFavorite: false,
+  showInMainCollection: true,
 }
 
 const demoSiteData: SiteData = {
@@ -490,8 +492,11 @@ function Storefront({
   const collectionProducts = products.filter((product) => {
     const matchesCollection = product.isActive && product.collectionSlug === baseCollection?.slug
     const matchesStore = activeStoreSlug ? slugifyStoreName(product.storeName) === activeStoreSlug : true
+    const matchesMainCollection = activeStoreSlug || baseCollection?.slug !== 'shop-my-finds'
+      ? true
+      : product.showInMainCollection
 
-    return matchesCollection && matchesStore
+    return matchesCollection && matchesStore && matchesMainCollection
   })
   const [activeCategory, setActiveCategory] = useState('All')
   const categories = useMemo(
@@ -610,6 +615,71 @@ function normalizeBioLinkOrder(links: BioLink[], movedLinkId: string) {
   ]
 
   return reorderedLinks.map((link, index) => ({ ...link, sortOrder: index + 1 }))
+}
+
+function ImageSourceField({
+  label,
+  value,
+  uploadFolder,
+  onChange,
+  onMessage,
+}: {
+  label: string
+  value: string
+  uploadFolder: string
+  onChange: (value: string) => void
+  onMessage: (value: string) => void
+}) {
+  const [mode, setMode] = useState<'upload' | 'url'>('upload')
+  const [isUploading, setIsUploading] = useState(false)
+
+  async function uploadImage(file: File | undefined) {
+    if (!file) {
+      return
+    }
+
+    setIsUploading(true)
+    onMessage(`Uploading ${label.toLowerCase()}...`)
+
+    try {
+      const uploadedUrl = await uploadSiteImage(file, uploadFolder)
+      onChange(uploadedUrl)
+      onMessage(`${label} uploaded. Save changes to publish it.`)
+    } catch (error) {
+      onMessage(error instanceof Error ? error.message : `Could not upload ${label.toLowerCase()}.`)
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  return (
+    <div className="image-source-field">
+      <div className="image-source-header">
+        <strong>{label}</strong>
+        <select value={mode} onChange={(event) => setMode(event.target.value as 'upload' | 'url')}>
+          <option value="upload">Upload</option>
+          <option value="url">URL</option>
+        </select>
+      </div>
+      {value ? <img src={value} alt="" /> : <span className="image-placeholder" />}
+      {mode === 'upload' ? (
+        <label className="file-upload-control">
+          <input
+            type="file"
+            accept="image/*"
+            disabled={isUploading}
+            onChange={(event) => void uploadImage(event.target.files?.[0])}
+          />
+          {isUploading ? 'Uploading...' : 'Choose image'}
+        </label>
+      ) : (
+        <label>
+          Image URL
+          <input value={value} onChange={(event) => onChange(event.target.value)} required />
+        </label>
+      )}
+    </div>
+  )
 }
 
 function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean }) {
@@ -1148,8 +1218,15 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                   <article className="display-style-editor" key={collection.slug}>
                     <div>
                       <strong>{collection.title}</strong>
-                      <span>Choose how products appear on the public storefront.</span>
+                      <span>Update the storefront hero image and choose how products appear.</span>
                     </div>
+                    <ImageSourceField
+                      label={`${collection.title} hero image`}
+                      value={collection.heroImageUrl}
+                      uploadFolder={`collections/${collection.slug}/hero`}
+                      onChange={(value) => updateCollectionDraft(collection.slug, { heroImageUrl: value })}
+                      onMessage={setSaveMessage}
+                    />
                     <div className="display-style-options" role="radiogroup" aria-label={`${collection.title} display style`}>
                       {displayStyles.map((style) => (
                         <button
@@ -1171,7 +1248,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                     </div>
                     <button className="primary-button" type="button" onClick={() => saveCollectionSettings(collection)}>
                       <Check size={17} />
-                      Save display style
+                      Save storefront settings
                     </button>
                   </article>
                 ))}
@@ -1272,6 +1349,14 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                                 onChange={(event) => updateProductDraft(product.id, { isFavorite: event.target.checked })}
                               />
                               Mark as Rita pick
+                            </label>
+                            <label className="checkbox-label">
+                              <input
+                                type="checkbox"
+                                checked={product.showInMainCollection}
+                                onChange={(event) => updateProductDraft(product.id, { showInMainCollection: event.target.checked })}
+                              />
+                              Show in Shop My Finds
                             </label>
                             <button type="button" className="danger-button" onClick={() => removeExistingProduct(product)}>
                               <Trash2 size={15} />
@@ -1391,6 +1476,14 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                   />
                   Mark as Rita pick
                 </label>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={productDraft.showInMainCollection}
+                    onChange={(event) => setProductDraft({ ...productDraft, showInMainCollection: event.target.checked })}
+                  />
+                  Show in Shop My Finds
+                </label>
                 <button className="primary-button" type="submit">
                   <Check size={17} />
                   Save product
@@ -1434,15 +1527,21 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                 </label>
                 <details className="advanced-settings">
                   <summary>Images</summary>
-                  <div className="field-row">
-                    <label>
-                      Avatar image URL
-                      <input value={profileDraft.avatarUrl} onChange={(event) => setProfileDraft({ ...profileDraft, avatarUrl: event.target.value })} required />
-                    </label>
-                    <label>
-                      Hero image URL
-                      <input value={profileDraft.heroImageUrl} onChange={(event) => setProfileDraft({ ...profileDraft, heroImageUrl: event.target.value })} required />
-                    </label>
+                  <div className="image-field-grid">
+                    <ImageSourceField
+                      label="Avatar image"
+                      value={profileDraft.avatarUrl}
+                      uploadFolder="profiles/avatar"
+                      onChange={(value) => setProfileDraft({ ...profileDraft, avatarUrl: value })}
+                      onMessage={setSaveMessage}
+                    />
+                    <ImageSourceField
+                      label="Hero image"
+                      value={profileDraft.heroImageUrl}
+                      uploadFolder="profiles/hero"
+                      onChange={(value) => setProfileDraft({ ...profileDraft, heroImageUrl: value })}
+                      onMessage={setSaveMessage}
+                    />
                   </div>
                 </details>
                 <button className="primary-button" type="submit">

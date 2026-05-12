@@ -1221,6 +1221,62 @@
   gap: 8px;
 }
 
+.image-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.image-source-field {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--accent-2) 8%, var(--panel-strong));
+}
+
+.image-source-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.image-source-header strong {
+  color: var(--ink);
+}
+
+.image-source-header select {
+  width: min(150px, 45%);
+}
+
+.image-source-field img,
+.image-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  object-fit: cover;
+}
+
+.file-upload-control {
+  min-height: 44px;
+  place-items: center;
+  border-radius: 14px;
+  color: var(--button-ink) !important;
+  background: var(--button-bg);
+  cursor: pointer;
+}
+
+.file-upload-control input {
+  position: absolute;
+  width: 1px;
+  min-height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .field-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1390,6 +1446,7 @@
 
   .admin-grid,
   .field-row,
+  .image-field-grid,
   .import-box,
   .appearance-layout,
   .display-style-options,

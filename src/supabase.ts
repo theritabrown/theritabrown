@@ -181,6 +181,7 @@ export async function createProduct(product: Omit<Product, 'id' | 'sortOrder' | 
       href: normalizeUrl(product.href),
       category: product.category,
       is_favorite: product.isFavorite,
+      show_in_main_collection: product.showInMainCollection,
       is_active: true,
     })
     .select('*')
@@ -209,6 +210,7 @@ export async function updateProduct(product: Product) {
       href: normalizeUrl(product.href),
       category: product.category,
       is_favorite: product.isFavorite,
+      show_in_main_collection: product.showInMainCollection,
       is_active: product.isActive,
       sort_order: product.sortOrder,
       updated_at: new Date().toISOString(),
@@ -244,6 +246,7 @@ export async function updateCollectionSettings(collection: ProductCollection) {
   const { data, error } = await supabase
     .from('product_collections')
     .update({
+      hero_image_url: collection.heroImageUrl,
       display_style: collection.displayStyle,
       updated_at: new Date().toISOString(),
     })
@@ -256,6 +259,41 @@ export async function updateCollectionSettings(collection: ProductCollection) {
   }
 
   return mapCollection(data)
+}
+
+export async function uploadSiteImage(file: File, folder: string) {
+  if (!supabase) {
+    throw new Error('Supabase is not configured yet.')
+  }
+
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Choose an image file.')
+  }
+
+  const extension = file.name.includes('.')
+    ? file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || mimeToExtension(file.type)
+    : mimeToExtension(file.type)
+  const safeFolder = folder.replace(/[^a-z0-9/-]/gi, '-').replace(/^-+|-+$/g, '').toLowerCase()
+  const path = `${safeFolder}/${Date.now()}-${crypto.randomUUID()}.${extension}`
+  const { error } = await supabase.storage.from('site-images').upload(path, file, {
+    contentType: file.type,
+    upsert: false,
+  })
+
+  if (error) {
+    throw error
+  }
+
+  const { data } = supabase.storage.from('site-images').getPublicUrl(path)
+
+  return data.publicUrl
+}
+
+function mimeToExtension(type: string) {
+  if (type === 'image/png') return 'png'
+  if (type === 'image/webp') return 'webp'
+  if (type === 'image/gif') return 'gif'
+  return 'jpg'
 }
 
 function mapProfile(row: Record<string, string>): Profile {
@@ -316,6 +354,7 @@ function mapProduct(row: Record<string, string | boolean | number | null>): Prod
     href: String(row.href),
     category: String(row.category ?? 'Finds'),
     isFavorite: Boolean(row.is_favorite),
+    showInMainCollection: row.show_in_main_collection !== false,
     isActive: Boolean(row.is_active),
     sortOrder: Number(row.sort_order ?? 0),
   }
