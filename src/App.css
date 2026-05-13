@@ -68,6 +68,7 @@
 .profile-card {
   --profile-hero-height: 176px;
   --profile-hero-bleed: clamp(520px, 132vw, 760px);
+  --profile-fade-start: calc(var(--profile-hero-height) + 86px);
 
   position: relative;
   overflow: hidden;
@@ -79,11 +80,29 @@
   text-align: center;
 }
 
+.profile-card::before {
+  content: '';
+  position: absolute;
+  top: var(--profile-fade-start);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--panel) 0%, transparent) 0%,
+    color-mix(in srgb, var(--panel) 58%, transparent) 22%,
+    color-mix(in srgb, var(--panel) 92%, transparent) 42%,
+    var(--panel) 62%,
+    var(--panel) 100%
+  );
+  pointer-events: none;
+}
+
 .profile-art {
   position: relative;
   height: var(--profile-hero-height);
   overflow: visible;
-  isolation: isolate;
 }
 
 .profile-art > img {
@@ -95,26 +114,6 @@
   object-fit: cover;
   object-position: center top;
   z-index: 0;
-}
-
-.profile-art::after {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: 1;
-  height: calc(var(--profile-hero-height) + var(--profile-hero-bleed));
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--panel) 0%, transparent) 0%,
-    color-mix(in srgb, var(--panel) 0%, transparent) 43%,
-    color-mix(in srgb, var(--panel) 28%, transparent) 49%,
-    color-mix(in srgb, var(--panel) 68%, transparent) 56%,
-    color-mix(in srgb, var(--panel) 92%, transparent) 64%,
-    var(--panel) 74%,
-    var(--panel) 100%
-  );
-  border-radius: 26px 26px 0 0;
-  pointer-events: none;
 }
 
 .avatar-ring {
