@@ -67,7 +67,7 @@
 
 .profile-card {
   --profile-hero-height: 176px;
-  --profile-hero-bleed: clamp(150px, 34vw, 230px);
+  --profile-hero-bleed: clamp(390px, 96vw, 560px);
 
   position: relative;
   overflow: hidden;
@@ -106,10 +106,11 @@
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--panel) 0%, transparent) 0%,
-    color-mix(in srgb, var(--panel) 4%, transparent) 36%,
-    color-mix(in srgb, var(--panel) 46%, transparent) 58%,
-    color-mix(in srgb, var(--panel) 86%, transparent) 76%,
-    var(--panel) 94%
+    color-mix(in srgb, var(--panel) 8%, transparent) 24%,
+    color-mix(in srgb, var(--panel) 46%, transparent) 38%,
+    color-mix(in srgb, var(--panel) 84%, transparent) 52%,
+    var(--panel) 68%,
+    var(--panel) 100%
   );
   border-radius: 26px 26px 0 0;
   pointer-events: none;
