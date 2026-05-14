@@ -68,7 +68,7 @@
 .profile-card {
   --profile-hero-height: 176px;
   --profile-hero-bleed: clamp(520px, 132vw, 760px);
-  --profile-fade-start: calc(var(--profile-hero-height) + 96px);
+  --profile-fade-start: calc(var(--profile-hero-height) + 70px);
 
   position: relative;
   overflow: hidden;
@@ -150,6 +150,10 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.profile-card .sync-state {
+  color: var(--ink);
 }
 
 .profile-card h1,
