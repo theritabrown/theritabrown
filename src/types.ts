@@ -60,6 +60,7 @@ export type ProductMetadata = {
   imageUrl: string
   storeName: string
   url: string
+  imageWarning?: string
 }
 
 export type AdminDraft = {

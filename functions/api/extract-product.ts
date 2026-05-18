@@ -9,6 +9,12 @@ type ProductMetadata = {
   imageUrl: string
   storeName: string
   url: string
+  imageWarning?: string
+}
+
+type ExtractEnv = {
+  SEARCHAPI_API_KEY?: string
+  SHEIN_SEARCH_API_KEY?: string
 }
 
 const headers = {
@@ -18,7 +24,7 @@ const headers = {
   'Content-Type': 'application/json',
 }
 
-export const onRequest: PagesFunction = async ({ request }) => {
+export const onRequest: PagesFunction<ExtractEnv> = async ({ request, env }) => {
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers })
   }
@@ -46,6 +52,12 @@ export const onRequest: PagesFunction = async ({ request }) => {
 
   try {
     const storeName = hostToStoreName(url.hostname)
+    const sheinMetadata = await importSheinProduct(url, storeName, env)
+
+    if (sheinMetadata?.imageUrl) {
+      return json(200, sheinMetadata satisfies ProductMetadata)
+    }
+
     const response = await fetch(url.toString(), {
       headers: {
         accept: 'text/html,application/xhtml+xml',
@@ -57,7 +69,7 @@ export const onRequest: PagesFunction = async ({ request }) => {
 
     if (!response.ok) {
       if ([401, 403, 429, 503].includes(response.status)) {
-        return json(200, fallbackMetadata(url, storeName))
+        return json(200, sheinMetadata ?? fallbackMetadata(url, storeName))
       }
 
       return json(response.status, {
@@ -109,12 +121,13 @@ export const onRequest: PagesFunction = async ({ request }) => {
     )
 
     return json(200, {
-      title,
+      title: sheinMetadata?.title || title,
       description,
       price: price ? `${currency === 'USD' || !currency ? '$' : `${currency} `}${price}` : '',
-      imageUrl: image ? new URL(image, url).toString() : '',
+      imageUrl: image ? new URL(image, url).toString() : sheinMetadata?.imageUrl || '',
       storeName,
       url: url.toString(),
+      imageWarning: image || sheinMetadata?.imageUrl ? undefined : sheinMetadata?.imageWarning,
     } satisfies ProductMetadata)
   } catch (error) {
     return json(500, {
@@ -261,6 +274,12 @@ function normalizeProductObject(value: JsonObject): JsonObject {
     description: firstString(value.description, value.desc, value.productDesc, value.goods_desc),
     image: firstString(
       value.image,
+      value.images,
+      value.productImages,
+      value.product_images,
+      value.gallery,
+      value.galleryImages,
+      value.gallery_images,
       value.imageUrl,
       value.image_url,
       value.goods_img,
@@ -317,6 +336,69 @@ function normalizeOffers(value: unknown): JsonObject {
   return {}
 }
 
+async function importSheinProduct(url: URL, storeName: string, env: ExtractEnv): Promise<ProductMetadata | null> {
+  if (storeName !== 'Shein') {
+    return null
+  }
+
+  const productId = sheinProductId(url)
+  const apiKey = env.SHEIN_SEARCH_API_KEY || env.SEARCHAPI_API_KEY
+
+  if (!apiKey || !productId) {
+    return fallbackMetadata(url, storeName)
+  }
+
+  const apiUrl = new URL('https://www.searchapi.io/api/v1/search')
+  apiUrl.searchParams.set('engine', 'shein_product')
+  apiUrl.searchParams.set('product_id', productId)
+  apiUrl.searchParams.set('shein_domain', sheinDomain(url))
+  apiUrl.searchParams.set('api_key', apiKey)
+
+  try {
+    const response = await fetch(apiUrl.toString(), {
+      headers: {
+        accept: 'application/json',
+        'user-agent': 'RitaBrownProductImporter/1.0',
+      },
+    })
+
+    if (!response.ok) {
+      return fallbackMetadata(url, storeName)
+    }
+
+    const payload = (await response.json()) as unknown
+    const candidates: JsonObject[] = []
+    collectProductCandidates(payload, candidates)
+    const product = candidates.sort((a, b) => productScore(b) - productScore(a))[0]
+
+    if (!product) {
+      return fallbackMetadata(url, storeName)
+    }
+
+    const imageUrl = firstString(product.image)
+    const price = firstString(product.price)
+    return {
+      title: cleanTitle(firstString(product.name), storeName) || titleFromUrl(url, storeName),
+      description: cleanDescription(firstString(product.description), storeName),
+      price: price ? normalizePrice(price) : '',
+      imageUrl: imageUrl ? new URL(imageUrl, url).toString() : '',
+      storeName,
+      url: url.toString(),
+    }
+  } catch {
+    return fallbackMetadata(url, storeName)
+  }
+}
+
+function sheinProductId(url: URL) {
+  return url.pathname.match(/-p-(\d+)/i)?.[1] ?? url.searchParams.get('goods_id') ?? url.searchParams.get('product_id')
+}
+
+function sheinDomain(url: URL) {
+  const hostname = url.hostname.toLowerCase().replace(/^www\./, '')
+  return hostname.endsWith('shein.com') || hostname.endsWith('shein.co.uk') ? hostname : 'us.shein.com'
+}
+
 function firstString(...values: unknown[]): string {
   for (const value of values) {
     if (Array.isArray(value)) {
@@ -327,6 +409,20 @@ function firstString(...values: unknown[]): string {
     }
     if (typeof value === 'string' && value.trim()) {
       return value.trim()
+    }
+    if (isJsonObject(value)) {
+      const nested = firstString(
+        value.url,
+        value.src,
+        value.href,
+        value.image,
+        value.imageUrl,
+        value.image_url,
+        value.thumbnail,
+      )
+      if (nested) {
+        return nested
+      }
     }
   }
   return ''
@@ -384,7 +480,14 @@ function fallbackMetadata(url: URL, storeName: string): ProductMetadata {
     imageUrl: '',
     storeName,
     url: url.toString(),
+    imageWarning: storeName === 'Shein'
+      ? 'Shein blocked the product image. Add SHEIN_SEARCH_API_KEY or paste the image URL manually.'
+      : undefined,
   }
+}
+
+function normalizePrice(value: string) {
+  return value.trim().startsWith('$') ? value.trim() : `$${value.trim()}`
 }
 
 function cleanTitle(value: string, storeName: string) {

@@ -15,6 +15,9 @@ Add these Pages environment variables:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
+- Optional: `SHEIN_SEARCH_API_KEY` or `SEARCHAPI_API_KEY`
+
+Shein blocks normal server-side metadata reads with a challenge page. If Shein image import is required, add a server-only SearchApi key to Cloudflare Pages as `SHEIN_SEARCH_API_KEY`. Without it, the importer falls back to title/store only and asks the admin to paste the image URL manually.
 
 The product importer runs at:
 

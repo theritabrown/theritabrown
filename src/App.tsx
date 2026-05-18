@@ -992,7 +992,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
           ? false
           : current.showInMainCollection,
       }))
-      setSaveMessage('Product details imported. Review and save.')
+      setSaveMessage(metadata.imageWarning || 'Product details imported. Review and save.')
     } catch (error) {
       setSaveMessage(error instanceof Error ? error.message : 'Could not import that product.')
     } finally {
