@@ -344,8 +344,12 @@ async function importSheinProduct(url: URL, storeName: string, env: ExtractEnv):
   const productId = sheinProductId(url)
   const apiKey = env.SHEIN_SEARCH_API_KEY || env.SEARCHAPI_API_KEY
 
-  if (!apiKey || !productId) {
-    return fallbackMetadata(url, storeName)
+  if (!productId) {
+    return fallbackMetadata(url, storeName, 'Could not read the Shein product id from this URL.')
+  }
+
+  if (!apiKey) {
+    return fallbackMetadata(url, storeName, 'SHEIN_SEARCH_API_KEY was not available to Cloudflare Pages.')
   }
 
   const apiUrl = new URL('https://www.searchapi.io/api/v1/search')
@@ -363,20 +367,39 @@ async function importSheinProduct(url: URL, storeName: string, env: ExtractEnv):
     })
 
     if (!response.ok) {
-      return fallbackMetadata(url, storeName)
+      return (
+        (await searchSheinImageFallback(url, storeName, apiKey)) ??
+        fallbackMetadata(url, storeName, `SearchApi could not import this Shein product (status ${response.status}).`)
+      )
     }
 
     const payload = (await response.json()) as unknown
     const candidates: JsonObject[] = []
+
+    if (isJsonObject(payload) && isJsonObject(payload.product)) {
+      candidates.push(normalizeProductObject(payload.product))
+    }
+
     collectProductCandidates(payload, candidates)
     const product = candidates.sort((a, b) => productScore(b) - productScore(a))[0]
 
     if (!product) {
-      return fallbackMetadata(url, storeName)
+      return (
+        (await searchSheinImageFallback(url, storeName, apiKey)) ??
+        fallbackMetadata(url, storeName, 'SearchApi responded, but no Shein product data was found.')
+      )
     }
 
     const imageUrl = firstString(product.image)
     const price = firstString(product.price)
+
+    if (!imageUrl) {
+      return (
+        (await searchSheinImageFallback(url, storeName, apiKey)) ??
+        fallbackMetadata(url, storeName, 'SearchApi responded, but no Shein product image was found.')
+      )
+    }
+
     return {
       title: cleanTitle(firstString(product.name), storeName) || titleFromUrl(url, storeName),
       description: cleanDescription(firstString(product.description), storeName),
@@ -386,8 +409,89 @@ async function importSheinProduct(url: URL, storeName: string, env: ExtractEnv):
       url: url.toString(),
     }
   } catch {
-    return fallbackMetadata(url, storeName)
+    return (
+      (await searchSheinImageFallback(url, storeName, apiKey)) ??
+      fallbackMetadata(url, storeName, 'SearchApi could not import this Shein product right now.')
+    )
   }
+}
+
+async function searchSheinImageFallback(
+  url: URL,
+  storeName: string,
+  apiKey: string,
+): Promise<ProductMetadata | null> {
+  const title = titleFromUrl(url, storeName)
+
+  if (!title || title === `${storeName} product`) {
+    return null
+  }
+
+  const apiUrl = new URL('https://www.searchapi.io/api/v1/search')
+  apiUrl.searchParams.set('engine', 'google_images')
+  apiUrl.searchParams.set('q', `"${title}" SHEIN`)
+  apiUrl.searchParams.set('api_key', apiKey)
+
+  try {
+    const response = await fetch(apiUrl.toString(), {
+      headers: {
+        accept: 'application/json',
+        'user-agent': 'RitaBrownProductImporter/1.0',
+      },
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const payload = (await response.json()) as unknown
+    const image = firstTrustedSheinImage(payload)
+
+    if (!image) {
+      return null
+    }
+
+    return {
+      title,
+      description: '',
+      price: '',
+      imageUrl: image,
+      storeName,
+      url: url.toString(),
+      imageWarning: 'Shein product API was unavailable, so the image was imported from a matching Shein image result.',
+    }
+  } catch {
+    return null
+  }
+}
+
+function firstTrustedSheinImage(value: unknown): string {
+  if (!isJsonObject(value) || !Array.isArray(value.images)) {
+    return ''
+  }
+
+  for (const result of value.images) {
+    if (!isJsonObject(result)) {
+      continue
+    }
+
+    const source = isJsonObject(result.source) ? result.source : {}
+    const original = isJsonObject(result.original) ? result.original : {}
+    const sourceLink = firstString(source.link)
+    const sourceName = firstString(source.name)
+    const imageUrl = firstString(original.link, result.original)
+
+    if (imageUrl && isSheinImageResult(sourceLink, sourceName, imageUrl)) {
+      return imageUrl
+    }
+  }
+
+  return ''
+}
+
+function isSheinImageResult(sourceLink: string, sourceName: string, imageUrl: string) {
+  const haystack = `${sourceLink} ${sourceName} ${imageUrl}`.toLowerCase()
+  return haystack.includes('shein') || haystack.includes('ltwebstatic.com')
 }
 
 function sheinProductId(url: URL) {
@@ -472,7 +576,7 @@ function titleFromUrl(url: URL, storeName: string) {
   return rawSlug.replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
-function fallbackMetadata(url: URL, storeName: string): ProductMetadata {
+function fallbackMetadata(url: URL, storeName: string, imageWarning?: string): ProductMetadata {
   return {
     title: titleFromUrl(url, storeName),
     description: '',
@@ -481,7 +585,7 @@ function fallbackMetadata(url: URL, storeName: string): ProductMetadata {
     storeName,
     url: url.toString(),
     imageWarning: storeName === 'Shein'
-      ? 'Shein blocked the product image. Add SHEIN_SEARCH_API_KEY or paste the image URL manually.'
+      ? imageWarning ?? 'Shein blocked the product image. Add SHEIN_SEARCH_API_KEY or paste the image URL manually.'
       : undefined,
   }
 }
