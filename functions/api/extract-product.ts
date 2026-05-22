@@ -8,6 +8,7 @@ type ProductMetadata = {
   price: string
   imageUrl: string
   storeName: string
+  category: string
   url: string
   imageWarning?: string
 }
@@ -91,14 +92,25 @@ export const onRequest: PagesFunction<ExtractEnv> = async ({ request, env }) => 
       $('meta[property="twitter:image"]').attr('content'),
       $('meta[itemprop="image"]').attr('content'),
     )
-    const price = firstString(
+    const price = firstText(
       offers?.price,
       offers?.lowPrice,
       embeddedProduct?.price,
+      embeddedProduct?.salePrice,
+      embeddedProduct?.retailPrice,
+      embeddedProduct?.unitPrice,
       $('meta[property="product:price:amount"]').attr('content'),
       $('meta[itemprop="price"]').attr('content'),
     )
     const currency = firstString(offers?.priceCurrency, $('meta[property="product:price:currency"]').attr('content'))
+    const category = cleanCategory(firstCategory(
+      embeddedProduct?.category,
+      product?.category,
+      $('meta[property="product:category"]').attr('content'),
+      $('meta[name="product:category"]').attr('content'),
+      $('meta[itemprop="category"]').attr('content'),
+      readBreadcrumbCategory($),
+    ))
     const title = cleanTitle(
       firstString(
         embeddedProduct?.name,
@@ -123,9 +135,10 @@ export const onRequest: PagesFunction<ExtractEnv> = async ({ request, env }) => 
     return json(200, {
       title: sheinMetadata?.title || title,
       description,
-      price: price ? `${currency === 'USD' || !currency ? '$' : `${currency} `}${price}` : '',
+      price: formatPrice(price, currency),
       imageUrl: image ? new URL(image, url).toString() : sheinMetadata?.imageUrl || '',
       storeName,
+      category: sheinMetadata?.category || category,
       url: url.toString(),
       imageWarning: image || sheinMetadata?.imageUrl ? undefined : sheinMetadata?.imageWarning,
     } satisfies ProductMetadata)
@@ -289,7 +302,7 @@ function normalizeProductObject(value: JsonObject): JsonObject {
       value.thumbnail,
       value.thumb,
     ),
-    price: firstString(
+    price: firstText(
       value.price,
       value.salePrice,
       value.sale_price,
@@ -297,8 +310,27 @@ function normalizeProductObject(value: JsonObject): JsonObject {
       value.retail_price,
       value.unitPrice,
       value.unit_price,
+      value.priceAmount,
+      value.price_amount,
+      value.minPrice,
+      value.min_price,
+      value.currentPrice,
+      value.current_price,
       offers.price,
       offers.lowPrice,
+    ),
+    category: firstCategory(
+      value.category,
+      value.categories,
+      value.productCategory,
+      value.product_category,
+      value.categoryName,
+      value.category_name,
+      value.catName,
+      value.cat_name,
+      value.breadcrumb,
+      value.breadcrumbs,
+      value.breadCrumbs,
     ),
   }
 }
@@ -334,6 +366,76 @@ function normalizeOffers(value: unknown): JsonObject {
   }
 
   return {}
+}
+
+function readBreadcrumbCategory($: cheerio.CheerioAPI) {
+  const linkedBreadcrumb = $('[itemtype*="BreadcrumbList"] [itemprop="itemListElement"]')
+    .toArray()
+    .map((element) => {
+      const name = $(element).find('[itemprop="name"]').first().text()
+      return name.trim()
+    })
+    .filter(Boolean)
+
+  if (linkedBreadcrumb.length) {
+    return linkedBreadcrumb
+  }
+
+  const jsonLdBreadcrumb = readJsonLdBreadcrumb($)
+  if (jsonLdBreadcrumb.length) {
+    return jsonLdBreadcrumb
+  }
+
+  return []
+}
+
+function readJsonLdBreadcrumb($: cheerio.CheerioAPI) {
+  const breadcrumbs: string[] = []
+
+  $('script[type="application/ld+json"]')
+    .toArray()
+    .forEach((script) => {
+      try {
+        const parsed = JSON.parse($(script).text()) as unknown
+        collectBreadcrumbs(parsed, breadcrumbs)
+      } catch {
+        return
+      }
+    })
+
+  return breadcrumbs
+}
+
+function collectBreadcrumbs(value: unknown, breadcrumbs: string[], depth = 0) {
+  if (depth > 6) {
+    return
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectBreadcrumbs(item, breadcrumbs, depth + 1))
+    return
+  }
+
+  if (!isJsonObject(value)) {
+    return
+  }
+
+  const type = value['@type']
+  const isBreadcrumb = Array.isArray(type) ? type.includes('BreadcrumbList') : type === 'BreadcrumbList'
+
+  if (isBreadcrumb && Array.isArray(value.itemListElement)) {
+    value.itemListElement.forEach((item) => {
+      const name = isJsonObject(item)
+        ? firstString(item.name, isJsonObject(item.item) ? item.item.name : undefined)
+        : ''
+
+      if (name) {
+        breadcrumbs.push(name)
+      }
+    })
+  }
+
+  Object.values(value).forEach((nestedValue) => collectBreadcrumbs(nestedValue, breadcrumbs, depth + 1))
 }
 
 async function importSheinProduct(url: URL, storeName: string, env: ExtractEnv): Promise<ProductMetadata | null> {
@@ -403,9 +505,10 @@ async function importSheinProduct(url: URL, storeName: string, env: ExtractEnv):
     return {
       title: cleanTitle(firstString(product.name), storeName) || titleFromUrl(url, storeName),
       description: cleanDescription(firstString(product.description), storeName),
-      price: price ? normalizePrice(price) : '',
+      price: formatPrice(price, ''),
       imageUrl: imageUrl ? new URL(imageUrl, url).toString() : '',
       storeName,
+      category: cleanCategory(firstCategory(product.category)),
       url: url.toString(),
     }
   } catch {
@@ -457,6 +560,7 @@ async function searchSheinImageFallback(
       price: '',
       imageUrl: image,
       storeName,
+      category: '',
       url: url.toString(),
       imageWarning: 'Shein product API was unavailable, so the image was imported from a matching Shein image result.',
     }
@@ -532,6 +636,92 @@ function firstString(...values: unknown[]): string {
   return ''
 }
 
+function firstText(...values: unknown[]): string {
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      const nested = firstText(...value)
+      if (nested) {
+        return nested
+      }
+    }
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return String(value)
+    }
+
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim()
+    }
+
+    if (isJsonObject(value)) {
+      const nested = firstText(
+        value.amount,
+        value.value,
+        value.text,
+        value.label,
+        value.displayValue,
+        value.display_value,
+        value.formatted,
+        value.formattedPrice,
+        value.formatted_price,
+        value.current,
+        value.sale,
+        value.final,
+      )
+
+      if (nested) {
+        return nested
+      }
+    }
+  }
+
+  return ''
+}
+
+function firstCategory(...values: unknown[]): string {
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      const entries = value
+        .map((item) => firstCategory(item))
+        .filter((item) => item && !isGenericCategory(item))
+
+      if (entries.length) {
+        return entries[entries.length - 1]
+      }
+    }
+
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim()
+    }
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return String(value)
+    }
+
+    if (isJsonObject(value)) {
+      const nested = firstCategory(
+        value.name,
+        value.title,
+        value.label,
+        value.text,
+        value.category,
+        value.categoryName,
+        value.category_name,
+        value.catName,
+        value.cat_name,
+        value.breadcrumb,
+        value.breadcrumbs,
+      )
+
+      if (nested) {
+        return nested
+      }
+    }
+  }
+
+  return ''
+}
+
 function hostToStoreName(hostname: string) {
   const normalizedHost = hostname.toLowerCase().replace(/^www\./, '')
   const knownStores: Array<[string, string]> = [
@@ -583,6 +773,7 @@ function fallbackMetadata(url: URL, storeName: string, imageWarning?: string): P
     price: '',
     imageUrl: '',
     storeName,
+    category: '',
     url: url.toString(),
     imageWarning: storeName === 'Shein'
       ? imageWarning ?? 'Shein blocked the product image. Add SHEIN_SEARCH_API_KEY or paste the image URL manually.'
@@ -590,8 +781,36 @@ function fallbackMetadata(url: URL, storeName: string, imageWarning?: string): P
   }
 }
 
-function normalizePrice(value: string) {
-  return value.trim().startsWith('$') ? value.trim() : `$${value.trim()}`
+function formatPrice(value: string, currency: string) {
+  const trimmed = value.trim()
+
+  if (!trimmed) {
+    return ''
+  }
+
+  if (/^[A-Z]{3}\s/i.test(trimmed) || /^[^\d\s]/.test(trimmed)) {
+    return trimmed
+  }
+
+  return currency && currency !== 'USD' ? `${currency} ${trimmed}` : `$${trimmed}`
+}
+
+function cleanCategory(value: string) {
+  const category = value
+    .replace(/\s+/g, ' ')
+    .replace(/\s*[>/|]\s*/g, ' / ')
+    .trim()
+
+  if (!category || isGenericCategory(category)) {
+    return ''
+  }
+
+  return category.replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+function isGenericCategory(value: string) {
+  const normalized = value.toLowerCase().trim()
+  return ['home', 'shop', 'products', 'all', 'new', 'sale', 'search'].includes(normalized)
 }
 
 function cleanTitle(value: string, storeName: string) {

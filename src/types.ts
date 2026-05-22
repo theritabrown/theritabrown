@@ -59,6 +59,7 @@ export type ProductMetadata = {
   price: string
   imageUrl: string
   storeName: string
+  category?: string
   url: string
   imageWarning?: string
 }

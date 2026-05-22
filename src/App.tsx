@@ -988,6 +988,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
         price: metadata.price || current.price,
         imageUrl: metadata.imageUrl || current.imageUrl,
         storeName: metadata.storeName || current.storeName,
+        category: metadata.category || current.category,
         showInMainCollection: metadata.storeName && privateStorefrontSlugs.has(storeNameSlug(metadata.storeName))
           ? false
           : current.showInMainCollection,
