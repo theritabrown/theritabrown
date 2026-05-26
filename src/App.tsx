@@ -12,6 +12,7 @@ import {
   Home,
   Eye,
   EyeOff,
+  Info,
   Link as LinkIcon,
   Loader2,
   Palette,
@@ -1599,17 +1600,178 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                 <p className="smart-hint">
                   This highlights products marked as Rita pick from every storefront. Card style and size affect the homepage section only; View all uses the normal storefront layout.
                 </p>
-                <div className="field-row">
+                <div className="settings-section">
+                  <div className="settings-section-header">
+                    <div>
+                      <h3>Content and visibility</h3>
+                      <p>Name the section and choose whether it appears on the homepage.</p>
+                    </div>
+                    <span className="info-pill" title="These controls affect the Rita's Picks section title and homepage visibility.">
+                      <Info size={15} />
+                    </span>
+                  </div>
+                  <div className="field-row">
+                    <label>
+                      Section title
+                      <input
+                        value={homepageSectionDraft.title}
+                        onChange={(event) => setHomepageSectionDraft({ ...homepageSectionDraft, title: event.target.value })}
+                        required
+                      />
+                    </label>
+                    <label className="checkbox-label checkbox-card">
+                      <input
+                        type="checkbox"
+                        checked={homepageSectionDraft.isVisible}
+                        onChange={(event) => setHomepageSectionDraft({ ...homepageSectionDraft, isVisible: event.target.checked })}
+                      />
+                      Show this highlight section on the homepage
+                    </label>
+                  </div>
+                </div>
+
+                <div className="settings-section">
+                  <div className="settings-section-header">
+                    <div>
+                      <h3>Homepage highlight cards</h3>
+                      <p>Controls only the curated cards shown on the homepage under Rita's Picks.</p>
+                    </div>
+                    <span className="info-pill" title="Card style, card size, and scrolling do not change the View all page.">
+                      <Info size={15} />
+                    </span>
+                  </div>
+                  <div className="section-settings-grid">
+                    <label>
+                      Card display style
+                      <select
+                        value={homepageSectionDraft.cardStyle}
+                        onChange={(event) => setHomepageSectionDraft({
+                          ...homepageSectionDraft,
+                          cardStyle: event.target.value as HomepageSection['cardStyle'],
+                        })}
+                      >
+                        {cardStyles.map((style) => (
+                          <option key={style.value} value={style.value}>
+                            {style.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Card size
+                      <select
+                        value={homepageSectionDraft.cardSize}
+                        onChange={(event) => setHomepageSectionDraft({
+                          ...homepageSectionDraft,
+                          cardSize: event.target.value as HomepageSection['cardSize'],
+                        })}
+                      >
+                        {cardSizes.map((size) => (
+                          <option key={size.value} value={size.value}>
+                            {size.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Scroll style
+                      <select
+                        value={homepageSectionDraft.railBehavior}
+                        onChange={(event) => setHomepageSectionDraft({
+                          ...homepageSectionDraft,
+                          railBehavior: event.target.value as HomepageSection['railBehavior'],
+                        })}
+                      >
+                        {homeRailBehaviors.map((behavior) => (
+                          <option key={behavior.value} value={behavior.value}>
+                            {behavior.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Auto-scroll speed
+                      <select
+                        value={homepageSectionDraft.railSpeed}
+                        onChange={(event) => setHomepageSectionDraft({
+                          ...homepageSectionDraft,
+                          railSpeed: event.target.value as HomepageSection['railSpeed'],
+                        })}
+                        disabled={homepageSectionDraft.railBehavior !== 'auto'}
+                      >
+                        {homeRailSpeeds.map((speed) => (
+                          <option key={speed.value} value={speed.value}>
+                            {speed.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <div className="setting-option-group">
+                    <h4>Display style</h4>
+                    <div className="rail-behavior-options" role="radiogroup" aria-label="Homepage Rita Picks card display style">
+                      {cardStyles.map((style) => (
+                        <button
+                          type="button"
+                          key={style.value}
+                          className={homepageSectionDraft.cardStyle === style.value ? 'active' : ''}
+                          onClick={() => setHomepageSectionDraft({ ...homepageSectionDraft, cardStyle: style.value })}
+                          aria-pressed={homepageSectionDraft.cardStyle === style.value}
+                        >
+                          <strong>{style.label}</strong>
+                          <small>{style.description}</small>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="setting-option-group">
+                    <h4>Card size</h4>
+                    <div className="rail-behavior-options card-size-options" role="radiogroup" aria-label="Homepage Rita Picks card size">
+                      {cardSizes.map((size) => (
+                        <button
+                          type="button"
+                          key={size.value}
+                          className={homepageSectionDraft.cardSize === size.value ? 'active' : ''}
+                          onClick={() => setHomepageSectionDraft({ ...homepageSectionDraft, cardSize: size.value })}
+                          aria-pressed={homepageSectionDraft.cardSize === size.value}
+                        >
+                          <strong>{size.label}</strong>
+                          <small>{size.value === 'small' ? 'Compact cards' : size.value === 'large' ? 'Larger feature cards' : 'Balanced default'}</small>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="setting-option-group">
+                    <h4>Scroll behavior</h4>
+                    <div className="rail-behavior-options" role="radiogroup" aria-label="Rita Picks homepage rail behavior">
+                      {homeRailBehaviors.map((behavior) => (
+                        <button
+                          type="button"
+                          key={behavior.value}
+                          className={homepageSectionDraft.railBehavior === behavior.value ? 'active' : ''}
+                          onClick={() => setHomepageSectionDraft({ ...homepageSectionDraft, railBehavior: behavior.value })}
+                          aria-pressed={homepageSectionDraft.railBehavior === behavior.value}
+                        >
+                          <strong>{behavior.label}</strong>
+                          <small>{behavior.description}</small>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="settings-section">
+                  <div className="settings-section-header">
+                    <div>
+                      <h3>View all page</h3>
+                      <p>Controls the page opened by the View all button. It uses normal storefront cards.</p>
+                    </div>
+                    <span className="info-pill" title="Only the layout changes here. Homepage card style and size are not applied to View all.">
+                      <Info size={15} />
+                    </span>
+                  </div>
                   <label>
-                    Section and page title
-                    <input
-                      value={homepageSectionDraft.title}
-                      onChange={(event) => setHomepageSectionDraft({ ...homepageSectionDraft, title: event.target.value })}
-                      required
-                    />
-                  </label>
-                  <label>
-                    View all page layout
+                    Page layout
                     <select
                       value={homepageSectionDraft.displayStyle}
                       onChange={(event) => setHomepageSectionDraft({
@@ -1624,125 +1786,6 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                       ))}
                     </select>
                   </label>
-                </div>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={homepageSectionDraft.isVisible}
-                    onChange={(event) => setHomepageSectionDraft({ ...homepageSectionDraft, isVisible: event.target.checked })}
-                  />
-                  Show this highlight section on the homepage
-                </label>
-                <div className="section-settings-grid">
-                  <label>
-                    Homepage scroll style
-                    <select
-                      value={homepageSectionDraft.railBehavior}
-                      onChange={(event) => setHomepageSectionDraft({
-                        ...homepageSectionDraft,
-                        railBehavior: event.target.value as HomepageSection['railBehavior'],
-                      })}
-                    >
-                      {homeRailBehaviors.map((behavior) => (
-                        <option key={behavior.value} value={behavior.value}>
-                          {behavior.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Auto-scroll speed
-                    <select
-                      value={homepageSectionDraft.railSpeed}
-                      onChange={(event) => setHomepageSectionDraft({
-                        ...homepageSectionDraft,
-                        railSpeed: event.target.value as HomepageSection['railSpeed'],
-                      })}
-                      disabled={homepageSectionDraft.railBehavior !== 'auto'}
-                    >
-                      {homeRailSpeeds.map((speed) => (
-                        <option key={speed.value} value={speed.value}>
-                          {speed.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-                <div className="section-settings-grid">
-                  <label>
-                    Homepage card display style
-                    <select
-                      value={homepageSectionDraft.cardStyle}
-                      onChange={(event) => setHomepageSectionDraft({
-                        ...homepageSectionDraft,
-                        cardStyle: event.target.value as HomepageSection['cardStyle'],
-                      })}
-                    >
-                      {cardStyles.map((style) => (
-                        <option key={style.value} value={style.value}>
-                          {style.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Homepage card size
-                    <select
-                      value={homepageSectionDraft.cardSize}
-                      onChange={(event) => setHomepageSectionDraft({
-                        ...homepageSectionDraft,
-                        cardSize: event.target.value as HomepageSection['cardSize'],
-                      })}
-                    >
-                      {cardSizes.map((size) => (
-                        <option key={size.value} value={size.value}>
-                          {size.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-                <div className="rail-behavior-options" role="radiogroup" aria-label="Rita Picks card display style">
-                  {cardStyles.map((style) => (
-                    <button
-                      type="button"
-                      key={style.value}
-                      className={homepageSectionDraft.cardStyle === style.value ? 'active' : ''}
-                      onClick={() => setHomepageSectionDraft({ ...homepageSectionDraft, cardStyle: style.value })}
-                      aria-pressed={homepageSectionDraft.cardStyle === style.value}
-                    >
-                      <strong>{style.label}</strong>
-                      <small>{style.description}</small>
-                    </button>
-                  ))}
-                </div>
-                <div className="rail-behavior-options card-size-options" role="radiogroup" aria-label="Rita Picks card size">
-                  {cardSizes.map((size) => (
-                    <button
-                      type="button"
-                      key={size.value}
-                      className={homepageSectionDraft.cardSize === size.value ? 'active' : ''}
-                      onClick={() => setHomepageSectionDraft({ ...homepageSectionDraft, cardSize: size.value })}
-                      aria-pressed={homepageSectionDraft.cardSize === size.value}
-                    >
-                      <strong>{size.label}</strong>
-                      <small>{size.value === 'small' ? 'Compact cards' : size.value === 'large' ? 'Larger feature cards' : 'Balanced default'}</small>
-                    </button>
-                  ))}
-                </div>
-                <div className="rail-behavior-options" role="radiogroup" aria-label="Rita Picks homepage rail behavior">
-                  {homeRailBehaviors.map((behavior) => (
-                    <button
-                      type="button"
-                      key={behavior.value}
-                      className={homepageSectionDraft.railBehavior === behavior.value ? 'active' : ''}
-                      onClick={() => setHomepageSectionDraft({ ...homepageSectionDraft, railBehavior: behavior.value })}
-                      aria-pressed={homepageSectionDraft.railBehavior === behavior.value}
-                    >
-                      <strong>{behavior.label}</strong>
-                      <small>{behavior.description}</small>
-                    </button>
-                  ))}
                 </div>
                 <button className="primary-button" type="button" onClick={saveHomepageSection}>
                   <Check size={17} />
