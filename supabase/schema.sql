@@ -22,13 +22,23 @@ create table if not exists public.product_collections (
   id uuid primary key default gen_random_uuid(),
   slug text not null unique,
   title text not null,
+  home_title text not null default 'Shop My Finds',
   description text not null,
   hero_image_url text not null,
   display_style text not null default 'editorial-grid' check (display_style in ('editorial-grid', 'spotlight', 'compact-list', 'masonry')),
+  show_on_home boolean not null default true,
+  home_rail_behavior text not null default 'swipe' check (home_rail_behavior in ('swipe', 'arrows', 'auto')),
+  home_rail_speed text not null default 'standard' check (home_rail_speed in ('relaxed', 'standard', 'fast')),
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.product_collections
+  add column if not exists home_title text not null default 'Shop My Finds',
+  add column if not exists show_on_home boolean not null default true,
+  add column if not exists home_rail_behavior text not null default 'swipe',
+  add column if not exists home_rail_speed text not null default 'standard';
 
 create table if not exists public.bio_links (
   id uuid primary key default gen_random_uuid(),
@@ -223,6 +233,7 @@ values (
   'editorial-grid'
 ) on conflict (slug) do update set
   title = excluded.title,
+  home_title = coalesce(public.product_collections.home_title, excluded.title),
   description = excluded.description,
   hero_image_url = excluded.hero_image_url,
   display_style = excluded.display_style;

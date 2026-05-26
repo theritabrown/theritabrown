@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft,
   ArrowUpRight,
   Camera,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   ExternalLink,
   Heart,
@@ -87,6 +89,30 @@ const displayStyles: Array<{ value: ProductDisplayStyle; label: string; descript
     label: 'Masonry',
     description: 'Pinterest-style browsing with a more casual feel.',
   },
+]
+
+const homeRailBehaviors: Array<{ value: ProductCollection['homeRailBehavior']; label: string; description: string }> = [
+  {
+    value: 'swipe',
+    label: 'Swipe',
+    description: 'A simple horizontal rail visitors can drag or swipe.',
+  },
+  {
+    value: 'arrows',
+    label: 'Arrows',
+    description: 'Adds previous and next buttons for guided browsing.',
+  },
+  {
+    value: 'auto',
+    label: 'Auto-scroll',
+    description: 'Continuously moves the products, pausing on hover.',
+  },
+]
+
+const homeRailSpeeds: Array<{ value: ProductCollection['homeRailSpeed']; label: string }> = [
+  { value: 'relaxed', label: 'Relaxed' },
+  { value: 'standard', label: 'Standard' },
+  { value: 'fast', label: 'Fast' },
 ]
 
 const iconMap = {
@@ -403,8 +429,17 @@ function PublicHome({
 }: {
   data: SiteData
 }) {
-  const featuredCollection = data.collections[0]
-  const featuredProducts = data.products.filter((product) => product.isActive).slice(0, 4)
+  const featuredCollection = data.collections.find((collection) => collection.showOnHome) ?? null
+  const featuredProducts = featuredCollection
+    ? data.products
+        .filter((product) => (
+          product.isActive &&
+          product.showInMainCollection &&
+          product.collectionSlug === featuredCollection.slug
+        ))
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .slice(0, 8)
+    : []
   const socialLinks = data.links
     .filter((link) => link.isActive && isSocialProfileLink(link))
     .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -446,26 +481,72 @@ function PublicHome({
         </div>
       </section>
 
-      {featuredCollection ? (
-        <section className="store-preview">
+      {featuredCollection && featuredProducts.length ? (
+        <section className="curated-storefront">
           <div className="section-heading">
             <div>
-              <p className="small-label">Curated storefront</p>
-              <h2>{featuredCollection.title}</h2>
+              <h2>{featuredCollection.homeTitle || featuredCollection.title}</h2>
             </div>
             <a href={`/store/${featuredCollection.slug}`} className="ghost-button">
               View all
               <ArrowUpRight size={16} />
             </a>
           </div>
-          <div className="product-rail">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} compact />
-            ))}
-          </div>
+          <HomeProductRail collection={featuredCollection} products={featuredProducts} />
         </section>
       ) : null}
     </main>
+  )
+}
+
+function HomeProductRail({
+  collection,
+  products,
+}: {
+  collection: ProductCollection
+  products: Product[]
+}) {
+  const railRef = useRef<HTMLDivElement | null>(null)
+  const isAuto = collection.homeRailBehavior === 'auto' && products.length > 1
+  const showArrows = collection.homeRailBehavior === 'arrows' && products.length > 1
+  const railProducts = isAuto ? [...products, ...products] : products
+
+  function scrollRail(direction: 'previous' | 'next') {
+    const rail = railRef.current
+
+    if (!rail) {
+      return
+    }
+
+    rail.scrollBy({
+      left: direction === 'next' ? rail.clientWidth * 0.82 : rail.clientWidth * -0.82,
+      behavior: 'smooth',
+    })
+  }
+
+  return (
+    <div className={`product-rail-shell product-rail-${collection.homeRailBehavior} product-rail-speed-${collection.homeRailSpeed}`}>
+      {showArrows ? (
+        <button type="button" className="rail-arrow rail-arrow-left" onClick={() => scrollRail('previous')} aria-label="Previous products">
+          <ChevronLeft size={18} />
+        </button>
+      ) : null}
+      <div ref={railRef} className="product-rail">
+        {railProducts.map((product, index) => (
+          <ProductCard
+            key={`${product.id}-${index}`}
+            product={product}
+            compact
+            ariaHidden={isAuto && index >= products.length}
+          />
+        ))}
+      </div>
+      {showArrows ? (
+        <button type="button" className="rail-arrow rail-arrow-right" onClick={() => scrollRail('next')} aria-label="Next products">
+          <ChevronRight size={18} />
+        </button>
+      ) : null}
+    </div>
   )
 }
 
@@ -593,10 +674,18 @@ function slugifyStoreName(value: string) {
     .replace(/^-+|-+$/g, '')
 }
 
-function ProductCard({ product, compact = false }: { product: Product; compact?: boolean }) {
+function ProductCard({
+  product,
+  compact = false,
+  ariaHidden = false,
+}: {
+  product: Product
+  compact?: boolean
+  ariaHidden?: boolean
+}) {
   return (
-    <article className={`product-card ${compact ? 'compact' : ''}`}>
-      <a href={product.href} target="_blank" rel="noreferrer" className="product-image">
+    <article className={`product-card ${compact ? 'compact' : ''}`} aria-hidden={ariaHidden}>
+      <a href={product.href} target="_blank" rel="noreferrer" className="product-image" tabIndex={ariaHidden ? -1 : undefined}>
         <img src={product.imageUrl} alt={product.title} />
         {product.isFavorite ? (
           <span className="favorite-badge">
@@ -610,7 +699,7 @@ function ProductCard({ product, compact = false }: { product: Product; compact?:
         <h3>{product.title}</h3>
         <div className="product-actions">
           <strong>{product.price || 'Shop'}</strong>
-          <a href={product.href} target="_blank" rel="noreferrer">
+          <a href={product.href} target="_blank" rel="noreferrer" tabIndex={ariaHidden ? -1 : undefined}>
             Shop
             <ExternalLink size={14} />
           </a>
@@ -1392,8 +1481,34 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                   <article className="display-style-editor" key={collection.slug}>
                     <div>
                       <strong>{collection.title}</strong>
-                      <span>Update the storefront hero image and choose how products appear.</span>
+                      <span>Update the store page and control the homepage storefront preview.</span>
                     </div>
+                    <div className="field-row">
+                      <label>
+                        Store page title
+                        <input
+                          value={collection.title}
+                          onChange={(event) => updateCollectionDraft(collection.slug, { title: event.target.value })}
+                          required
+                        />
+                      </label>
+                      <label>
+                        Homepage section title
+                        <input
+                          value={collection.homeTitle}
+                          onChange={(event) => updateCollectionDraft(collection.slug, { homeTitle: event.target.value })}
+                          required
+                        />
+                      </label>
+                    </div>
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={collection.showOnHome}
+                        onChange={(event) => updateCollectionDraft(collection.slug, { showOnHome: event.target.checked })}
+                      />
+                      Show this section on the homepage
+                    </label>
                     <ImageSourceField
                       label={`${collection.title} hero image`}
                       value={collection.heroImageUrl}
@@ -1401,6 +1516,53 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                       onChange={(value) => updateCollectionDraft(collection.slug, { heroImageUrl: value })}
                       onMessage={setSaveMessage}
                     />
+                    <div className="section-settings-grid">
+                      <label>
+                        Homepage scroll style
+                        <select
+                          value={collection.homeRailBehavior}
+                          onChange={(event) => updateCollectionDraft(collection.slug, {
+                            homeRailBehavior: event.target.value as ProductCollection['homeRailBehavior'],
+                          })}
+                        >
+                          {homeRailBehaviors.map((behavior) => (
+                            <option key={behavior.value} value={behavior.value}>
+                              {behavior.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Auto-scroll speed
+                        <select
+                          value={collection.homeRailSpeed}
+                          onChange={(event) => updateCollectionDraft(collection.slug, {
+                            homeRailSpeed: event.target.value as ProductCollection['homeRailSpeed'],
+                          })}
+                          disabled={collection.homeRailBehavior !== 'auto'}
+                        >
+                          {homeRailSpeeds.map((speed) => (
+                            <option key={speed.value} value={speed.value}>
+                              {speed.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <div className="rail-behavior-options" role="radiogroup" aria-label={`${collection.title} homepage rail behavior`}>
+                      {homeRailBehaviors.map((behavior) => (
+                        <button
+                          type="button"
+                          key={behavior.value}
+                          className={collection.homeRailBehavior === behavior.value ? 'active' : ''}
+                          onClick={() => updateCollectionDraft(collection.slug, { homeRailBehavior: behavior.value })}
+                          aria-pressed={collection.homeRailBehavior === behavior.value}
+                        >
+                          <strong>{behavior.label}</strong>
+                          <small>{behavior.description}</small>
+                        </button>
+                      ))}
+                    </div>
                     <div className="display-style-options" role="radiogroup" aria-label={`${collection.title} display style`}>
                       {displayStyles.map((style) => (
                         <button

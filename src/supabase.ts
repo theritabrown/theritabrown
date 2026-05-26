@@ -1,5 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
-import type { BioLink, Product, ProductCollection, ProductDisplayStyle, Profile } from './types'
+import type {
+  BioLink,
+  HomeStorefrontRailBehavior,
+  HomeStorefrontRailSpeed,
+  Product,
+  ProductCollection,
+  ProductDisplayStyle,
+  Profile,
+} from './types'
 import { normalizeUrl } from './url'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
@@ -248,8 +256,13 @@ export async function updateCollectionSettings(collection: ProductCollection) {
   const { data, error } = await supabase
     .from('product_collections')
     .update({
+      title: collection.title,
+      home_title: collection.homeTitle,
       hero_image_url: collection.heroImageUrl,
       display_style: collection.displayStyle,
+      show_on_home: collection.showOnHome,
+      home_rail_behavior: collection.homeRailBehavior,
+      home_rail_speed: collection.homeRailSpeed,
       updated_at: new Date().toISOString(),
     })
     .eq('id', collection.id)
@@ -333,9 +346,13 @@ function mapCollection(row: Record<string, string | boolean | null>): ProductCol
     id: String(row.id),
     slug: String(row.slug),
     title: String(row.title),
+    homeTitle: String(row.home_title ?? row.title),
     description: String(row.description),
     heroImageUrl: String(row.hero_image_url),
     displayStyle: mapDisplayStyle(row.display_style),
+    showOnHome: row.show_on_home !== false,
+    homeRailBehavior: mapHomeRailBehavior(row.home_rail_behavior),
+    homeRailSpeed: mapHomeRailSpeed(row.home_rail_speed),
     isActive: Boolean(row.is_active),
   }
 }
@@ -344,6 +361,14 @@ function mapDisplayStyle(value: unknown): ProductDisplayStyle {
   return value === 'spotlight' || value === 'compact-list' || value === 'masonry'
     ? value
     : 'editorial-grid'
+}
+
+function mapHomeRailBehavior(value: unknown): HomeStorefrontRailBehavior {
+  return value === 'arrows' || value === 'auto' ? value : 'swipe'
+}
+
+function mapHomeRailSpeed(value: unknown): HomeStorefrontRailSpeed {
+  return value === 'relaxed' || value === 'fast' ? value : 'standard'
 }
 
 function mapProduct(row: Record<string, string | boolean | number | null>): Product {

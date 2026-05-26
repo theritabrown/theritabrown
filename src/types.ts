@@ -1,6 +1,8 @@
 export type LinkKind = 'social' | 'feature' | 'storefront' | 'standard'
 
 export type ProductDisplayStyle = 'editorial-grid' | 'spotlight' | 'compact-list' | 'masonry'
+export type HomeStorefrontRailBehavior = 'swipe' | 'arrows' | 'auto'
+export type HomeStorefrontRailSpeed = 'relaxed' | 'standard' | 'fast'
 
 export type Profile = {
   id: string
@@ -32,9 +34,13 @@ export type ProductCollection = {
   id: string
   slug: string
   title: string
+  homeTitle: string
   description: string
   heroImageUrl: string
   displayStyle: ProductDisplayStyle
+  showOnHome: boolean
+  homeRailBehavior: HomeStorefrontRailBehavior
+  homeRailSpeed: HomeStorefrontRailSpeed
   isActive: boolean
 }
 
