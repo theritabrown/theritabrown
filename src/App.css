@@ -790,24 +790,16 @@
   break-inside: avoid;
 }
 
-.product-grid-masonry .product-card:nth-child(5n + 1) .product-image {
+.product-grid-masonry .product-card:nth-child(3n + 1) .product-image {
   aspect-ratio: 4 / 5;
 }
 
-.product-grid-masonry .product-card:nth-child(5n + 2) .product-image {
+.product-grid-masonry .product-card:nth-child(3n + 2) .product-image {
   aspect-ratio: 1 / 1;
 }
 
-.product-grid-masonry .product-card:nth-child(5n + 3) .product-image {
+.product-grid-masonry .product-card:nth-child(3n) .product-image {
   aspect-ratio: 5 / 4;
-}
-
-.product-grid-masonry .product-card:nth-child(5n + 4) .product-image {
-  aspect-ratio: 3 / 4;
-}
-
-.product-grid-masonry .product-card:nth-child(5n) .product-image {
-  aspect-ratio: 6 / 5;
 }
 
 .admin-shell {
