@@ -463,6 +463,7 @@ function App() {
         section={siteData.homepageSection}
         products={siteData.products}
         profile={siteData.profile}
+        collections={siteData.collections}
       />
     )
   }
@@ -723,12 +724,16 @@ function RitaPicksPage({
   section,
   products,
   profile,
+  collections,
 }: {
   section: HomepageSection
   products: Product[]
   profile: Profile
+  collections: ProductCollection[]
 }) {
   const pickProducts = getRitaPickProducts(products)
+  const inheritedCollection = collections.find((collection) => collection.slug === 'shop-my-finds') ?? collections[0]
+  const displayStyle = inheritedCollection?.displayStyle ?? 'editorial-grid'
 
   return (
     <main className="site-shell storefront-screen">
@@ -743,7 +748,7 @@ function RitaPicksPage({
       </header>
 
       {pickProducts.length ? (
-        <section className={`product-grid product-grid-${section.displayStyle}`} aria-label={section.title}>
+        <section className={`product-grid product-grid-${displayStyle}`} aria-label={section.title}>
           {pickProducts.map((product) => (
             <ProductCard key={product.id} product={product} showFavoriteBadge={false} />
           ))}
@@ -1598,7 +1603,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                   <h2>Rita Picks highlight</h2>
                 </div>
                 <p className="smart-hint">
-                  This highlights products marked as Rita pick from every storefront. Card style and size affect the homepage section only; View all uses the normal storefront layout.
+                  This highlights products marked as Rita pick from every storefront. These settings affect the homepage section only; View all inherits the normal storefront layout.
                 </p>
                 <div className="settings-section">
                   <div className="settings-section-header">
@@ -1707,34 +1712,6 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                       </select>
                     </label>
                   </div>
-                </div>
-
-                <div className="settings-section">
-                  <div className="settings-section-header">
-                    <div>
-                      <h3>View all page</h3>
-                      <p>Controls the page opened by the View all button. It uses normal storefront cards.</p>
-                    </div>
-                    <span className="info-pill" title="Only the layout changes here. Homepage card style and size are not applied to View all.">
-                      <Info size={15} />
-                    </span>
-                  </div>
-                  <label>
-                    Page layout
-                    <select
-                      value={homepageSectionDraft.displayStyle}
-                      onChange={(event) => setHomepageSectionDraft({
-                        ...homepageSectionDraft,
-                        displayStyle: event.target.value as ProductDisplayStyle,
-                      })}
-                    >
-                      {displayStyles.map((style) => (
-                        <option key={style.value} value={style.value}>
-                          {style.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
                 </div>
                 <button className="primary-button" type="button" onClick={saveHomepageSection}>
                   <Check size={17} />
