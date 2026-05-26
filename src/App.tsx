@@ -132,6 +132,30 @@ const homeRailSpeeds: Array<{ value: HomepageSection['railSpeed']; label: string
   { value: 'fast', label: 'Fast' },
 ]
 
+const cardStyles: Array<{ value: HomepageSection['cardStyle']; label: string; description: string }> = [
+  {
+    value: 'full',
+    label: 'Full card',
+    description: 'Image, store, title, price, and shop button.',
+  },
+  {
+    value: 'clean',
+    label: 'Clean card',
+    description: 'Image, title, and price with less visual weight.',
+  },
+  {
+    value: 'image-forward',
+    label: 'Image forward',
+    description: 'Large image-led cards with text over the image.',
+  },
+]
+
+const cardSizes: Array<{ value: HomepageSection['cardSize']; label: string }> = [
+  { value: 'small', label: 'Small' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'large', label: 'Large' },
+]
+
 const iconMap = {
   sparkles: Sparkles,
   'shopping-bag': ShoppingBag,
@@ -558,6 +582,8 @@ function HomeProductRail({
             product={product}
             compact
             showFavoriteBadge={false}
+            cardStyle={section.cardStyle}
+            cardSize={section.cardSize}
             ariaHidden={isAuto && index >= products.length}
           />
         ))}
@@ -710,9 +736,15 @@ function RitaPicksPage({
       </header>
 
       {pickProducts.length ? (
-        <section className={`product-grid product-grid-${section.displayStyle}`} aria-label={section.title}>
+        <section className={`product-grid product-grid-${section.displayStyle} product-grid-card-${section.cardSize}`} aria-label={section.title}>
           {pickProducts.map((product) => (
-            <ProductCard key={product.id} product={product} showFavoriteBadge={false} />
+            <ProductCard
+              key={product.id}
+              product={product}
+              showFavoriteBadge={false}
+              cardStyle={section.cardStyle}
+              cardSize={section.cardSize}
+            />
           ))}
         </section>
       ) : (
@@ -744,15 +776,22 @@ function ProductCard({
   product,
   compact = false,
   showFavoriteBadge = true,
+  cardStyle = 'full',
+  cardSize = 'medium',
   ariaHidden = false,
 }: {
   product: Product
   compact?: boolean
   showFavoriteBadge?: boolean
+  cardStyle?: HomepageSection['cardStyle']
+  cardSize?: HomepageSection['cardSize']
   ariaHidden?: boolean
 }) {
   return (
-    <article className={`product-card ${compact ? 'compact' : ''}`} aria-hidden={ariaHidden}>
+    <article
+      className={`product-card ${compact ? 'compact' : ''} product-card-style-${cardStyle} product-card-size-${cardSize}`}
+      aria-hidden={ariaHidden}
+    >
       <a href={product.href} target="_blank" rel="noreferrer" className="product-image" tabIndex={ariaHidden ? -1 : undefined}>
         <img src={product.imageUrl} alt={product.title} />
         {product.isFavorite && showFavoriteBadge ? (
@@ -763,7 +802,7 @@ function ProductCard({
         ) : null}
       </a>
       <div className="product-copy">
-        <span>{product.storeName}</span>
+        {cardStyle !== 'clean' ? <span>{product.storeName}</span> : null}
         <h3>{product.title}</h3>
         <div className="product-actions">
           <strong>{product.price || 'Shop'}</strong>
@@ -1628,6 +1667,54 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                       ))}
                     </select>
                   </label>
+                </div>
+                <div className="section-settings-grid">
+                  <label>
+                    Card display style
+                    <select
+                      value={homepageSectionDraft.cardStyle}
+                      onChange={(event) => setHomepageSectionDraft({
+                        ...homepageSectionDraft,
+                        cardStyle: event.target.value as HomepageSection['cardStyle'],
+                      })}
+                    >
+                      {cardStyles.map((style) => (
+                        <option key={style.value} value={style.value}>
+                          {style.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Card size
+                    <select
+                      value={homepageSectionDraft.cardSize}
+                      onChange={(event) => setHomepageSectionDraft({
+                        ...homepageSectionDraft,
+                        cardSize: event.target.value as HomepageSection['cardSize'],
+                      })}
+                    >
+                      {cardSizes.map((size) => (
+                        <option key={size.value} value={size.value}>
+                          {size.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <div className="rail-behavior-options" role="radiogroup" aria-label="Rita Picks card display style">
+                  {cardStyles.map((style) => (
+                    <button
+                      type="button"
+                      key={style.value}
+                      className={homepageSectionDraft.cardStyle === style.value ? 'active' : ''}
+                      onClick={() => setHomepageSectionDraft({ ...homepageSectionDraft, cardStyle: style.value })}
+                      aria-pressed={homepageSectionDraft.cardStyle === style.value}
+                    >
+                      <strong>{style.label}</strong>
+                      <small>{style.description}</small>
+                    </button>
+                  ))}
                 </div>
                 <div className="rail-behavior-options" role="radiogroup" aria-label="Rita Picks homepage rail behavior">
                   {homeRailBehaviors.map((behavior) => (

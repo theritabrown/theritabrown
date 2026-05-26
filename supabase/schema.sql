@@ -41,6 +41,8 @@ create table if not exists public.homepage_sections (
   rail_behavior text not null default 'swipe' check (rail_behavior in ('swipe', 'arrows', 'auto')),
   rail_speed text not null default 'standard' check (rail_speed in ('relaxed', 'standard', 'fast')),
   display_style text not null default 'editorial-grid' check (display_style in ('editorial-grid', 'spotlight', 'compact-list', 'masonry')),
+  card_style text not null default 'full' check (card_style in ('full', 'clean', 'image-forward')),
+  card_size text not null default 'medium' check (card_size in ('small', 'medium', 'large')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -261,14 +263,16 @@ values (
   hero_image_url = excluded.hero_image_url,
   display_style = excluded.display_style;
 
-insert into public.homepage_sections (id, title, is_visible, rail_behavior, rail_speed, display_style)
-values ('rita-picks', 'Rita''s Picks', true, 'swipe', 'standard', 'editorial-grid')
+insert into public.homepage_sections (id, title, is_visible, rail_behavior, rail_speed, display_style, card_style, card_size)
+values ('rita-picks', 'Rita''s Picks', true, 'swipe', 'standard', 'editorial-grid', 'full', 'medium')
 on conflict (id) do update set
   title = coalesce(public.homepage_sections.title, excluded.title),
   is_visible = coalesce(public.homepage_sections.is_visible, excluded.is_visible),
   rail_behavior = coalesce(public.homepage_sections.rail_behavior, excluded.rail_behavior),
   rail_speed = coalesce(public.homepage_sections.rail_speed, excluded.rail_speed),
-  display_style = coalesce(public.homepage_sections.display_style, excluded.display_style);
+  display_style = coalesce(public.homepage_sections.display_style, excluded.display_style),
+  card_style = coalesce(public.homepage_sections.card_style, excluded.card_style),
+  card_size = coalesce(public.homepage_sections.card_size, excluded.card_size);
 
 insert into public.bio_links (label, description, href, kind, icon, collection_slug, sort_order)
 values

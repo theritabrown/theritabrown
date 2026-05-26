@@ -18,6 +18,8 @@ export const defaultHomepageSection: HomepageSection = {
   railBehavior: 'swipe',
   railSpeed: 'standard',
   displayStyle: 'editorial-grid',
+  cardStyle: 'full',
+  cardSize: 'medium',
 }
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
@@ -300,6 +302,8 @@ export async function updateHomepageSection(section: HomepageSection) {
       rail_behavior: section.railBehavior,
       rail_speed: section.railSpeed,
       display_style: section.displayStyle,
+      card_style: section.cardStyle,
+      card_size: section.cardSize,
       updated_at: new Date().toISOString(),
     })
     .select('*')
@@ -397,6 +401,8 @@ function mapHomepageSection(row: Record<string, string | boolean | null>): Homep
     railBehavior: mapHomeRailBehavior(row.rail_behavior),
     railSpeed: mapHomeRailSpeed(row.rail_speed),
     displayStyle: mapDisplayStyle(row.display_style),
+    cardStyle: mapProductCardStyle(row.card_style),
+    cardSize: mapProductCardSize(row.card_size),
   }
 }
 
@@ -412,6 +418,14 @@ function mapHomeRailBehavior(value: unknown): HomeStorefrontRailBehavior {
 
 function mapHomeRailSpeed(value: unknown): HomeStorefrontRailSpeed {
   return value === 'relaxed' || value === 'fast' ? value : 'standard'
+}
+
+function mapProductCardStyle(value: unknown): HomepageSection['cardStyle'] {
+  return value === 'clean' || value === 'image-forward' ? value : 'full'
+}
+
+function mapProductCardSize(value: unknown): HomepageSection['cardSize'] {
+  return value === 'small' || value === 'large' ? value : 'medium'
 }
 
 function mapProduct(row: Record<string, string | boolean | number | null>): Product {

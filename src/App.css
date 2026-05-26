@@ -344,14 +344,27 @@
 }
 
 .product-rail {
+  --home-card-min: 172px;
+  --home-card-max: 220px;
+
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(172px, 220px);
+  grid-auto-columns: minmax(var(--home-card-min), var(--home-card-max));
   gap: 12px;
   overflow-x: auto;
   padding: 4px 18px 12px 0;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
+}
+
+.product-rail-shell:has(.product-card-size-small) {
+  --home-card-min: 146px;
+  --home-card-max: 188px;
+}
+
+.product-rail-shell:has(.product-card-size-large) {
+  --home-card-min: 212px;
+  --home-card-max: 284px;
 }
 
 .product-rail::-webkit-scrollbar {
@@ -383,7 +396,7 @@
 }
 
 .product-rail-auto .product-card {
-  width: min(220px, 54vw);
+  width: min(var(--home-card-max), 62vw);
 }
 
 .rail-arrow {
@@ -432,11 +445,83 @@
   scroll-snap-align: start;
 }
 
+.product-card-size-small .product-copy {
+  gap: 6px;
+  padding: 10px;
+}
+
+.product-card-size-small .product-copy h3 {
+  min-height: 34px;
+  font-size: 0.9rem;
+}
+
+.product-card-size-small .product-actions a {
+  min-height: 30px;
+  padding: 0 10px;
+}
+
+.product-card-size-large .product-copy {
+  gap: 10px;
+  padding: 16px;
+}
+
+.product-card-size-large .product-copy h3 {
+  min-height: 54px;
+  font-size: 1.12rem;
+}
+
 .product-image {
   position: relative;
   display: block;
   aspect-ratio: 1 / 1;
   overflow: hidden;
+}
+
+.product-card-style-clean .product-copy {
+  gap: 7px;
+}
+
+.product-card-style-clean .product-copy h3 {
+  min-height: auto;
+}
+
+.product-card-style-clean .product-actions a {
+  display: none;
+}
+
+.product-card-style-image-forward {
+  position: relative;
+}
+
+.product-card-style-image-forward .product-image {
+  aspect-ratio: 4 / 5;
+}
+
+.product-card-style-image-forward .product-copy {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  left: 10px;
+  z-index: 2;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--panel) 84%, transparent);
+  box-shadow: var(--theme-shadow);
+}
+
+.product-card-style-image-forward .product-copy h3 {
+  min-height: auto;
+}
+
+.product-card-style-image-forward .product-actions a {
+  display: none;
+}
+
+.product-grid-card-small {
+  grid-template-columns: repeat(auto-fit, minmax(142px, 1fr));
+}
+
+.product-grid-card-large {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 .product-image img {

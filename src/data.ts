@@ -95,6 +95,8 @@ export const homepageSection: HomepageSection = {
   railBehavior: 'swipe',
   railSpeed: 'standard',
   displayStyle: 'editorial-grid',
+  cardStyle: 'full',
+  cardSize: 'medium',
 }
 
 export const products: Product[] = [

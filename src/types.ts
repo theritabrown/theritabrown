@@ -3,6 +3,8 @@ export type LinkKind = 'social' | 'feature' | 'storefront' | 'standard'
 export type ProductDisplayStyle = 'editorial-grid' | 'spotlight' | 'compact-list' | 'masonry'
 export type HomeStorefrontRailBehavior = 'swipe' | 'arrows' | 'auto'
 export type HomeStorefrontRailSpeed = 'relaxed' | 'standard' | 'fast'
+export type ProductCardStyle = 'full' | 'clean' | 'image-forward'
+export type ProductCardSize = 'small' | 'medium' | 'large'
 
 export type Profile = {
   id: string
@@ -47,6 +49,8 @@ export type HomepageSection = {
   railBehavior: HomeStorefrontRailBehavior
   railSpeed: HomeStorefrontRailSpeed
   displayStyle: ProductDisplayStyle
+  cardStyle: ProductCardStyle
+  cardSize: ProductCardSize
 }
 
 export type Product = {
