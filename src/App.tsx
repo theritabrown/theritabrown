@@ -661,16 +661,6 @@ function Storefront({
 
     return matchesCollection && matchesStore && matchesMainCollection
   })
-  const [activeCategory, setActiveCategory] = useState('All')
-  const categories = useMemo(
-    () => ['All', ...Array.from(new Set(collectionProducts.map((product) => product.category)))],
-    [collectionProducts],
-  )
-  const visibleProducts =
-    activeCategory === 'All'
-      ? collectionProducts
-      : collectionProducts.filter((product) => product.category === activeCategory)
-
   if (!baseCollection || (!collection && !storeProduct)) {
     return (
       <main className="site-shell empty-state">
@@ -698,6 +688,38 @@ function Storefront({
         <p>{storeProduct ? `Shop ${storeProduct.storeName} products from ${profile.name}'s curated finds.` : baseCollection.description}</p>
       </header>
 
+      <ProductCollectionGrid
+        products={collectionProducts}
+        displayStyle={baseCollection.displayStyle}
+        label="Products"
+      />
+    </main>
+  )
+}
+
+function ProductCollectionGrid({
+  products,
+  displayStyle,
+  label,
+  showFavoriteBadge = true,
+}: {
+  products: Product[]
+  displayStyle: ProductDisplayStyle
+  label: string
+  showFavoriteBadge?: boolean
+}) {
+  const [activeCategory, setActiveCategory] = useState('All')
+  const categories = useMemo(
+    () => ['All', ...Array.from(new Set(products.map((product) => product.category)))],
+    [products],
+  )
+  const visibleProducts =
+    activeCategory === 'All'
+      ? products
+      : products.filter((product) => product.category === activeCategory)
+
+  return (
+    <>
       <div className="category-tabs" aria-label="Product categories">
         {categories.map((category) => (
           <button
@@ -711,12 +733,12 @@ function Storefront({
         ))}
       </div>
 
-      <section className={`product-grid product-grid-${baseCollection.displayStyle}`} aria-label="Products">
+      <section className={`product-grid product-grid-${displayStyle}`} aria-label={label}>
         {visibleProducts.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard key={product.id} product={product} showFavoriteBadge={showFavoriteBadge} />
         ))}
       </section>
-    </main>
+    </>
   )
 }
 
@@ -748,11 +770,12 @@ function RitaPicksPage({
       </header>
 
       {pickProducts.length ? (
-        <section className={`product-grid product-grid-${displayStyle}`} aria-label={section.title}>
-          {pickProducts.map((product) => (
-            <ProductCard key={product.id} product={product} showFavoriteBadge={false} />
-          ))}
-        </section>
+        <ProductCollectionGrid
+          products={pickProducts}
+          displayStyle={displayStyle}
+          label={section.title}
+          showFavoriteBadge={false}
+        />
       ) : (
         <section className="empty-state">
           <h2>No Rita picks yet</h2>
