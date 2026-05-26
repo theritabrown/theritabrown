@@ -556,9 +556,10 @@ function HomeProductRail({
   products: Product[]
 }) {
   const railRef = useRef<HTMLDivElement | null>(null)
-  const isAuto = section.railBehavior === 'auto' && products.length > 1
+  const shouldLoopAuto = section.railBehavior === 'auto' && products.length >= 4
+  const railBehavior = shouldLoopAuto ? 'auto' : section.railBehavior === 'auto' ? 'swipe' : section.railBehavior
   const showArrows = section.railBehavior === 'arrows' && products.length > 1
-  const railProducts = isAuto ? [...products, ...products] : products
+  const railProducts = shouldLoopAuto ? [...products, ...products] : products
 
   function scrollRail(direction: 'previous' | 'next') {
     const rail = railRef.current
@@ -574,7 +575,7 @@ function HomeProductRail({
   }
 
   return (
-    <div className={`product-rail-shell product-rail-${section.railBehavior} product-rail-speed-${section.railSpeed}`}>
+    <div className={`product-rail-shell product-rail-${railBehavior} product-rail-speed-${section.railSpeed}`}>
       {showArrows ? (
         <button type="button" className="rail-arrow rail-arrow-left" onClick={() => scrollRail('previous')} aria-label="Previous products">
           <ChevronLeft size={18} />
@@ -589,7 +590,7 @@ function HomeProductRail({
             showFavoriteBadge={false}
             cardStyle={section.cardStyle}
             cardSize={section.cardSize}
-            ariaHidden={isAuto && index >= products.length}
+            ariaHidden={shouldLoopAuto && index >= products.length}
           />
         ))}
       </div>
