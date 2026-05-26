@@ -354,6 +354,7 @@
   overflow-x: auto;
   padding: 4px 18px 12px 0;
   scroll-snap-type: x mandatory;
+  scroll-padding-inline: 18px;
   scrollbar-width: none;
 }
 
@@ -399,6 +400,7 @@
   width: max-content;
   overflow: visible;
   padding-right: 0;
+  scroll-padding-inline: 0;
   animation: rail-scroll 34s linear infinite;
 }
 
@@ -416,6 +418,16 @@
 
 .product-rail-auto .product-card {
   width: min(var(--home-card-max), 62vw);
+}
+
+.product-rail-arrows .product-rail {
+  padding-inline: 52px;
+  scroll-padding-inline: 52px;
+}
+
+.product-rail-arrows .product-rail::after {
+  content: '';
+  width: 40px;
 }
 
 .rail-arrow {
@@ -1716,8 +1728,13 @@
     margin: 0 auto;
   }
 
-  .product-rail {
+  .product-rail-shell:not(.product-rail-auto):not(.product-rail-arrows) .product-rail {
     padding-right: 0;
+  }
+
+  .product-rail-arrows .product-rail {
+    padding-inline: 58px;
+    scroll-padding-inline: 58px;
   }
 }
 
