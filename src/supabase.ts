@@ -421,7 +421,7 @@ function mapHomeRailSpeed(value: unknown): HomeStorefrontRailSpeed {
 }
 
 function mapProductCardStyle(value: unknown): HomepageSection['cardStyle'] {
-  return value === 'clean' || value === 'image-forward' ? value : 'full'
+  return value === 'clean' || value === 'image-forward' || value === 'hero' ? value : 'full'
 }
 
 function mapProductCardSize(value: unknown): HomepageSection['cardSize'] {

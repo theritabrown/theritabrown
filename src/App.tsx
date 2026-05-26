@@ -148,6 +148,11 @@ const cardStyles: Array<{ value: HomepageSection['cardStyle']; label: string; de
     label: 'Image forward',
     description: 'Large image-led cards with text over the image.',
   },
+  {
+    value: 'hero',
+    label: 'Hero card',
+    description: 'Wide editorial card like the current large feature.',
+  },
 ]
 
 const cardSizes: Array<{ value: HomepageSection['cardSize']; label: string }> = [
@@ -1713,6 +1718,20 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                     >
                       <strong>{style.label}</strong>
                       <small>{style.description}</small>
+                    </button>
+                  ))}
+                </div>
+                <div className="rail-behavior-options card-size-options" role="radiogroup" aria-label="Rita Picks card size">
+                  {cardSizes.map((size) => (
+                    <button
+                      type="button"
+                      key={size.value}
+                      className={homepageSectionDraft.cardSize === size.value ? 'active' : ''}
+                      onClick={() => setHomepageSectionDraft({ ...homepageSectionDraft, cardSize: size.value })}
+                      aria-pressed={homepageSectionDraft.cardSize === size.value}
+                    >
+                      <strong>{size.label}</strong>
+                      <small>{size.value === 'small' ? 'Compact cards' : size.value === 'large' ? 'Larger feature cards' : 'Balanced default'}</small>
                     </button>
                   ))}
                 </div>

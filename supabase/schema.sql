@@ -41,7 +41,7 @@ create table if not exists public.homepage_sections (
   rail_behavior text not null default 'swipe' check (rail_behavior in ('swipe', 'arrows', 'auto')),
   rail_speed text not null default 'standard' check (rail_speed in ('relaxed', 'standard', 'fast')),
   display_style text not null default 'editorial-grid' check (display_style in ('editorial-grid', 'spotlight', 'compact-list', 'masonry')),
-  card_style text not null default 'full' check (card_style in ('full', 'clean', 'image-forward')),
+  card_style text not null default 'full' check (card_style in ('full', 'clean', 'image-forward', 'hero')),
   card_size text not null default 'medium' check (card_size in ('small', 'medium', 'large')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
