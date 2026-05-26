@@ -34,6 +34,20 @@ create table if not exists public.product_collections (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.homepage_sections (
+  id text primary key,
+  title text not null,
+  is_visible boolean not null default true,
+  rail_behavior text not null default 'swipe' check (rail_behavior in ('swipe', 'arrows', 'auto')),
+  rail_speed text not null default 'standard' check (rail_speed in ('relaxed', 'standard', 'fast')),
+  display_style text not null default 'editorial-grid' check (display_style in ('editorial-grid', 'spotlight', 'compact-list', 'masonry')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+grant select on public.homepage_sections to anon, authenticated;
+grant insert, update, delete on public.homepage_sections to authenticated;
+
 alter table public.product_collections
   add column if not exists home_title text not null default 'Shop My Finds',
   add column if not exists show_on_home boolean not null default true,
@@ -87,6 +101,7 @@ create table if not exists public.keep_alive_pings (
 
 alter table public.profiles enable row level security;
 alter table public.product_collections enable row level security;
+alter table public.homepage_sections enable row level security;
 alter table public.bio_links enable row level security;
 alter table public.products enable row level security;
 alter table public.keep_alive_pings enable row level security;
@@ -112,6 +127,10 @@ drop policy if exists "Public can read collections" on public.product_collection
 create policy "Public can read collections" on public.product_collections
   for select using (is_active = true);
 
+drop policy if exists "Public can read homepage sections" on public.homepage_sections;
+create policy "Public can read homepage sections" on public.homepage_sections
+  for select using (true);
+
 drop policy if exists "Public can read links" on public.bio_links;
 create policy "Public can read links" on public.bio_links
   for select using (is_active = true);
@@ -126,6 +145,10 @@ create policy "Authenticated users manage profile" on public.profiles
 
 drop policy if exists "Authenticated users manage collections" on public.product_collections;
 create policy "Authenticated users manage collections" on public.product_collections
+  for all to authenticated using (true) with check (true);
+
+drop policy if exists "Authenticated users manage homepage sections" on public.homepage_sections;
+create policy "Authenticated users manage homepage sections" on public.homepage_sections
   for all to authenticated using (true) with check (true);
 
 drop policy if exists "Authenticated users manage links" on public.bio_links;
@@ -237,6 +260,15 @@ values (
   description = excluded.description,
   hero_image_url = excluded.hero_image_url,
   display_style = excluded.display_style;
+
+insert into public.homepage_sections (id, title, is_visible, rail_behavior, rail_speed, display_style)
+values ('rita-picks', 'Rita''s Picks', true, 'swipe', 'standard', 'editorial-grid')
+on conflict (id) do update set
+  title = coalesce(public.homepage_sections.title, excluded.title),
+  is_visible = coalesce(public.homepage_sections.is_visible, excluded.is_visible),
+  rail_behavior = coalesce(public.homepage_sections.rail_behavior, excluded.rail_behavior),
+  rail_speed = coalesce(public.homepage_sections.rail_speed, excluded.rail_speed),
+  display_style = coalesce(public.homepage_sections.display_style, excluded.display_style);
 
 insert into public.bio_links (label, description, href, kind, icon, collection_slug, sort_order)
 values

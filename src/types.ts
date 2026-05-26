@@ -34,14 +34,19 @@ export type ProductCollection = {
   id: string
   slug: string
   title: string
-  homeTitle: string
   description: string
   heroImageUrl: string
   displayStyle: ProductDisplayStyle
-  showOnHome: boolean
-  homeRailBehavior: HomeStorefrontRailBehavior
-  homeRailSpeed: HomeStorefrontRailSpeed
   isActive: boolean
+}
+
+export type HomepageSection = {
+  id: string
+  title: string
+  isVisible: boolean
+  railBehavior: HomeStorefrontRailBehavior
+  railSpeed: HomeStorefrontRailSpeed
+  displayStyle: ProductDisplayStyle
 }
 
 export type Product = {

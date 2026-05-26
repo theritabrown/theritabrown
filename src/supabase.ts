@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import type {
   BioLink,
+  HomepageSection,
   HomeStorefrontRailBehavior,
   HomeStorefrontRailSpeed,
   Product,
@@ -9,6 +10,15 @@ import type {
   Profile,
 } from './types'
 import { normalizeUrl } from './url'
+
+export const defaultHomepageSection: HomepageSection = {
+  id: 'rita-picks',
+  title: "Rita's Picks",
+  isVisible: true,
+  railBehavior: 'swipe',
+  railSpeed: 'standard',
+  displayStyle: 'editorial-grid',
+}
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
@@ -38,11 +48,12 @@ export async function loadSiteData() {
     return null
   }
 
-  const [profileResult, linksResult, collectionsResult, productsResult] = await Promise.all([
+  const [profileResult, linksResult, collectionsResult, productsResult, homepageSectionResult] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', 'rita-brown').single(),
     supabase.from('bio_links').select('*').order('sort_order'),
     supabase.from('product_collections').select('*').eq('is_active', true).order('created_at'),
     supabase.from('products').select('*').order('sort_order'),
+    supabase.from('homepage_sections').select('*').eq('id', 'rita-picks').maybeSingle(),
   ])
 
   if (
@@ -59,6 +70,9 @@ export async function loadSiteData() {
     links: linksResult.data.map(mapBioLink),
     collections: collectionsResult.data.map(mapCollection),
     products: productsResult.data.map(mapProduct),
+    homepageSection: homepageSectionResult.error || !homepageSectionResult.data
+      ? defaultHomepageSection
+      : mapHomepageSection(homepageSectionResult.data),
   }
 }
 
@@ -257,12 +271,8 @@ export async function updateCollectionSettings(collection: ProductCollection) {
     .from('product_collections')
     .update({
       title: collection.title,
-      home_title: collection.homeTitle,
       hero_image_url: collection.heroImageUrl,
       display_style: collection.displayStyle,
-      show_on_home: collection.showOnHome,
-      home_rail_behavior: collection.homeRailBehavior,
-      home_rail_speed: collection.homeRailSpeed,
       updated_at: new Date().toISOString(),
     })
     .eq('id', collection.id)
@@ -274,6 +284,32 @@ export async function updateCollectionSettings(collection: ProductCollection) {
   }
 
   return mapCollection(data)
+}
+
+export async function updateHomepageSection(section: HomepageSection) {
+  if (!supabase) {
+    throw new Error('Supabase is not configured yet.')
+  }
+
+  const { data, error } = await supabase
+    .from('homepage_sections')
+    .upsert({
+      id: section.id,
+      title: section.title,
+      is_visible: section.isVisible,
+      rail_behavior: section.railBehavior,
+      rail_speed: section.railSpeed,
+      display_style: section.displayStyle,
+      updated_at: new Date().toISOString(),
+    })
+    .select('*')
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapHomepageSection(data)
 }
 
 export async function uploadSiteImage(file: File, folder: string) {
@@ -346,14 +382,21 @@ function mapCollection(row: Record<string, string | boolean | null>): ProductCol
     id: String(row.id),
     slug: String(row.slug),
     title: String(row.title),
-    homeTitle: String(row.home_title ?? row.title),
     description: String(row.description),
     heroImageUrl: String(row.hero_image_url),
     displayStyle: mapDisplayStyle(row.display_style),
-    showOnHome: row.show_on_home !== false,
-    homeRailBehavior: mapHomeRailBehavior(row.home_rail_behavior),
-    homeRailSpeed: mapHomeRailSpeed(row.home_rail_speed),
     isActive: Boolean(row.is_active),
+  }
+}
+
+function mapHomepageSection(row: Record<string, string | boolean | null>): HomepageSection {
+  return {
+    id: String(row.id),
+    title: String(row.title ?? defaultHomepageSection.title),
+    isVisible: row.is_visible !== false,
+    railBehavior: mapHomeRailBehavior(row.rail_behavior),
+    railSpeed: mapHomeRailSpeed(row.rail_speed),
+    displayStyle: mapDisplayStyle(row.display_style),
   }
 }
 

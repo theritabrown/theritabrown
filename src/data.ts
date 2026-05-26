@@ -1,4 +1,4 @@
-import type { BioLink, Product, ProductCollection, Profile } from './types'
+import type { BioLink, HomepageSection, Product, ProductCollection, Profile } from './types'
 
 export const profile: Profile = {
   id: 'rita-brown',
@@ -79,18 +79,23 @@ export const collections: ProductCollection[] = [
     id: 'shop-my-finds',
     slug: 'shop-my-finds',
     title: 'Shop My Finds',
-    homeTitle: 'Shop My Finds',
     description:
       'Pieces Rita would save, share, and send to a friend. Add links from any store and the storefront stays polished.',
     heroImageUrl:
       'https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=1200&q=85',
     displayStyle: 'editorial-grid',
-    showOnHome: true,
-    homeRailBehavior: 'swipe',
-    homeRailSpeed: 'standard',
     isActive: true,
   },
 ]
+
+export const homepageSection: HomepageSection = {
+  id: 'rita-picks',
+  title: "Rita's Picks",
+  isVisible: true,
+  railBehavior: 'swipe',
+  railSpeed: 'standard',
+  displayStyle: 'editorial-grid',
+}
 
 export const products: Product[] = [
   {

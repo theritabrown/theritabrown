@@ -40,7 +40,13 @@ import {
 } from 'react-icons/si'
 import { FaLinkedinIn, FaTelegram, FaThreads, FaXTwitter } from 'react-icons/fa6'
 import './App.css'
-import { bioLinks as demoLinks, collections as demoCollections, products as demoProducts, profile as demoProfile } from './data'
+import {
+  bioLinks as demoLinks,
+  collections as demoCollections,
+  homepageSection as demoHomepageSection,
+  products as demoProducts,
+  profile as demoProfile,
+} from './data'
 import {
   createBioLink,
   createProduct,
@@ -51,12 +57,22 @@ import {
   deleteBioLink,
   updateBioLink,
   updateCollectionSettings,
+  updateHomepageSection,
   updateProduct,
   updateProfile,
   uploadSiteImage,
 } from './supabase'
 import { applyTheme, themes } from './themes'
-import type { AdminDraft, BioLink, Product, ProductCollection, ProductDisplayStyle, ProductMetadata, Profile } from './types'
+import type {
+  AdminDraft,
+  BioLink,
+  HomepageSection,
+  Product,
+  ProductCollection,
+  ProductDisplayStyle,
+  ProductMetadata,
+  Profile,
+} from './types'
 import { normalizeUrl } from './url'
 
 type SiteData = {
@@ -64,6 +80,7 @@ type SiteData = {
   links: BioLink[]
   collections: ProductCollection[]
   products: Product[]
+  homepageSection: HomepageSection
 }
 
 type AdminTab = 'links' | 'products' | 'profile' | 'appearance'
@@ -91,7 +108,7 @@ const displayStyles: Array<{ value: ProductDisplayStyle; label: string; descript
   },
 ]
 
-const homeRailBehaviors: Array<{ value: ProductCollection['homeRailBehavior']; label: string; description: string }> = [
+const homeRailBehaviors: Array<{ value: HomepageSection['railBehavior']; label: string; description: string }> = [
   {
     value: 'swipe',
     label: 'Swipe',
@@ -109,7 +126,7 @@ const homeRailBehaviors: Array<{ value: ProductCollection['homeRailBehavior']; l
   },
 ]
 
-const homeRailSpeeds: Array<{ value: ProductCollection['homeRailSpeed']; label: string }> = [
+const homeRailSpeeds: Array<{ value: HomepageSection['railSpeed']; label: string }> = [
   { value: 'relaxed', label: 'Relaxed' },
   { value: 'standard', label: 'Standard' },
   { value: 'fast', label: 'Fast' },
@@ -346,6 +363,7 @@ const demoSiteData: SiteData = {
   links: demoLinks,
   collections: demoCollections,
   products: demoProducts,
+  homepageSection: demoHomepageSection,
 }
 
 function App() {
@@ -409,6 +427,16 @@ function App() {
     )
   }
 
+  if (path === '/picks' || path === '/rita-picks') {
+    return (
+      <RitaPicksPage
+        section={siteData.homepageSection}
+        products={siteData.products}
+        profile={siteData.profile}
+      />
+    )
+  }
+
   if (storefrontMatch?.[1]) {
     return (
       <Storefront
@@ -429,16 +457,8 @@ function PublicHome({
 }: {
   data: SiteData
 }) {
-  const featuredCollection = data.collections.find((collection) => collection.showOnHome) ?? null
-  const featuredProducts = featuredCollection
-    ? data.products
-        .filter((product) => (
-          product.isActive &&
-          product.showInMainCollection &&
-          product.collectionSlug === featuredCollection.slug
-        ))
-        .sort((a, b) => a.sortOrder - b.sortOrder)
-        .slice(0, 8)
+  const featuredProducts = data.homepageSection.isVisible
+    ? getRitaPickProducts(data.products).slice(0, 8)
     : []
   const socialLinks = data.links
     .filter((link) => link.isActive && isSocialProfileLink(link))
@@ -481,18 +501,18 @@ function PublicHome({
         </div>
       </section>
 
-      {featuredCollection && featuredProducts.length ? (
+      {data.homepageSection.isVisible && featuredProducts.length ? (
         <section className="curated-storefront">
           <div className="section-heading">
             <div>
-              <h2>{featuredCollection.homeTitle || featuredCollection.title}</h2>
+              <h2>{data.homepageSection.title}</h2>
             </div>
-            <a href={`/store/${featuredCollection.slug}`} className="ghost-button">
+            <a href="/picks" className="ghost-button">
               View all
               <ArrowUpRight size={16} />
             </a>
           </div>
-          <HomeProductRail collection={featuredCollection} products={featuredProducts} />
+          <HomeProductRail section={data.homepageSection} products={featuredProducts} />
         </section>
       ) : null}
     </main>
@@ -500,15 +520,15 @@ function PublicHome({
 }
 
 function HomeProductRail({
-  collection,
+  section,
   products,
 }: {
-  collection: ProductCollection
+  section: HomepageSection
   products: Product[]
 }) {
   const railRef = useRef<HTMLDivElement | null>(null)
-  const isAuto = collection.homeRailBehavior === 'auto' && products.length > 1
-  const showArrows = collection.homeRailBehavior === 'arrows' && products.length > 1
+  const isAuto = section.railBehavior === 'auto' && products.length > 1
+  const showArrows = section.railBehavior === 'arrows' && products.length > 1
   const railProducts = isAuto ? [...products, ...products] : products
 
   function scrollRail(direction: 'previous' | 'next') {
@@ -525,7 +545,7 @@ function HomeProductRail({
   }
 
   return (
-    <div className={`product-rail-shell product-rail-${collection.homeRailBehavior} product-rail-speed-${collection.homeRailSpeed}`}>
+    <div className={`product-rail-shell product-rail-${section.railBehavior} product-rail-speed-${section.railSpeed}`}>
       {showArrows ? (
         <button type="button" className="rail-arrow rail-arrow-left" onClick={() => scrollRail('previous')} aria-label="Previous products">
           <ChevronLeft size={18} />
@@ -537,6 +557,7 @@ function HomeProductRail({
             key={`${product.id}-${index}`}
             product={product}
             compact
+            showFavoriteBadge={false}
             ariaHidden={isAuto && index >= products.length}
           />
         ))}
@@ -665,6 +686,45 @@ function Storefront({
   )
 }
 
+function RitaPicksPage({
+  section,
+  products,
+  profile,
+}: {
+  section: HomepageSection
+  products: Product[]
+  profile: Profile
+}) {
+  const pickProducts = getRitaPickProducts(products)
+
+  return (
+    <main className="site-shell storefront-screen">
+      <header className="store-header">
+        <a href="/" className="back-link">
+          <ArrowLeft size={16} />
+          Back
+        </a>
+        <p className="small-label">{profile.name}'s highlights</p>
+        <h1>{section.title}</h1>
+        <p>Selected favorites from every storefront.</p>
+      </header>
+
+      {pickProducts.length ? (
+        <section className={`product-grid product-grid-${section.displayStyle}`} aria-label={section.title}>
+          {pickProducts.map((product) => (
+            <ProductCard key={product.id} product={product} showFavoriteBadge={false} />
+          ))}
+        </section>
+      ) : (
+        <section className="empty-state">
+          <h2>No Rita picks yet</h2>
+          <p>Mark products as Rita pick in the admin to publish them here.</p>
+        </section>
+      )}
+    </main>
+  )
+}
+
 function slugifyStoreName(value: string) {
   return value
     .trim()
@@ -674,20 +734,28 @@ function slugifyStoreName(value: string) {
     .replace(/^-+|-+$/g, '')
 }
 
+function getRitaPickProducts(products: Product[]) {
+  return products
+    .filter((product) => product.isActive && product.isFavorite)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+}
+
 function ProductCard({
   product,
   compact = false,
+  showFavoriteBadge = true,
   ariaHidden = false,
 }: {
   product: Product
   compact?: boolean
+  showFavoriteBadge?: boolean
   ariaHidden?: boolean
 }) {
   return (
     <article className={`product-card ${compact ? 'compact' : ''}`} aria-hidden={ariaHidden}>
       <a href={product.href} target="_blank" rel="noreferrer" className="product-image" tabIndex={ariaHidden ? -1 : undefined}>
         <img src={product.imageUrl} alt={product.title} />
-        {product.isFavorite ? (
+        {product.isFavorite && showFavoriteBadge ? (
           <span className="favorite-badge">
             <Heart size={13} fill="currentColor" />
             Rita pick
@@ -885,6 +953,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
   const [linkEdits, setLinkEdits] = useState(data.links)
   const [collectionEdits, setCollectionEdits] = useState(data.collections)
   const [productEdits, setProductEdits] = useState(data.products)
+  const [homepageSectionDraft, setHomepageSectionDraft] = useState(data.homepageSection)
   const [activeTab, setActiveTab] = useState<AdminTab>('links')
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null)
   const [editingProductId, setEditingProductId] = useState<string | null>(null)
@@ -1136,6 +1205,17 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
       setSaveMessage(`${savedCollection.title} display saved.`)
     } catch (error) {
       setSaveMessage(error instanceof Error ? error.message : 'Could not save storefront display.')
+    }
+  }
+
+  async function saveHomepageSection() {
+    setSaveMessage(`Saving ${homepageSectionDraft.title} section...`)
+    try {
+      const savedSection = await updateHomepageSection(homepageSectionDraft)
+      setHomepageSectionDraft(savedSection)
+      setSaveMessage(`${savedSection.title} section saved.`)
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? error.message : 'Could not save highlight section.')
     }
   }
 
@@ -1474,6 +1554,103 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
               </div>
               <section className="admin-panel storefront-settings">
                 <div className="panel-title">
+                  <Sparkles size={20} />
+                  <h2>Rita Picks highlight</h2>
+                </div>
+                <p className="smart-hint">
+                  This homepage section and its View all page show products marked as Rita pick from every storefront.
+                </p>
+                <div className="field-row">
+                  <label>
+                    Section and page title
+                    <input
+                      value={homepageSectionDraft.title}
+                      onChange={(event) => setHomepageSectionDraft({ ...homepageSectionDraft, title: event.target.value })}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Picks page layout
+                    <select
+                      value={homepageSectionDraft.displayStyle}
+                      onChange={(event) => setHomepageSectionDraft({
+                        ...homepageSectionDraft,
+                        displayStyle: event.target.value as ProductDisplayStyle,
+                      })}
+                    >
+                      {displayStyles.map((style) => (
+                        <option key={style.value} value={style.value}>
+                          {style.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={homepageSectionDraft.isVisible}
+                    onChange={(event) => setHomepageSectionDraft({ ...homepageSectionDraft, isVisible: event.target.checked })}
+                  />
+                  Show this highlight section on the homepage
+                </label>
+                <div className="section-settings-grid">
+                  <label>
+                    Homepage scroll style
+                    <select
+                      value={homepageSectionDraft.railBehavior}
+                      onChange={(event) => setHomepageSectionDraft({
+                        ...homepageSectionDraft,
+                        railBehavior: event.target.value as HomepageSection['railBehavior'],
+                      })}
+                    >
+                      {homeRailBehaviors.map((behavior) => (
+                        <option key={behavior.value} value={behavior.value}>
+                          {behavior.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Auto-scroll speed
+                    <select
+                      value={homepageSectionDraft.railSpeed}
+                      onChange={(event) => setHomepageSectionDraft({
+                        ...homepageSectionDraft,
+                        railSpeed: event.target.value as HomepageSection['railSpeed'],
+                      })}
+                      disabled={homepageSectionDraft.railBehavior !== 'auto'}
+                    >
+                      {homeRailSpeeds.map((speed) => (
+                        <option key={speed.value} value={speed.value}>
+                          {speed.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <div className="rail-behavior-options" role="radiogroup" aria-label="Rita Picks homepage rail behavior">
+                  {homeRailBehaviors.map((behavior) => (
+                    <button
+                      type="button"
+                      key={behavior.value}
+                      className={homepageSectionDraft.railBehavior === behavior.value ? 'active' : ''}
+                      onClick={() => setHomepageSectionDraft({ ...homepageSectionDraft, railBehavior: behavior.value })}
+                      aria-pressed={homepageSectionDraft.railBehavior === behavior.value}
+                    >
+                      <strong>{behavior.label}</strong>
+                      <small>{behavior.description}</small>
+                    </button>
+                  ))}
+                </div>
+                <button className="primary-button" type="button" onClick={saveHomepageSection}>
+                  <Check size={17} />
+                  Save Rita Picks settings
+                </button>
+              </section>
+
+              <section className="admin-panel storefront-settings">
+                <div className="panel-title">
                   <Store size={20} />
                   <h2>Storefront display</h2>
                 </div>
@@ -1483,31 +1660,13 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                       <strong>{collection.title}</strong>
                       <span>Update the store page and control the homepage storefront preview.</span>
                     </div>
-                    <div className="field-row">
-                      <label>
-                        Store page title
-                        <input
-                          value={collection.title}
-                          onChange={(event) => updateCollectionDraft(collection.slug, { title: event.target.value })}
-                          required
-                        />
-                      </label>
-                      <label>
-                        Homepage section title
-                        <input
-                          value={collection.homeTitle}
-                          onChange={(event) => updateCollectionDraft(collection.slug, { homeTitle: event.target.value })}
-                          required
-                        />
-                      </label>
-                    </div>
-                    <label className="checkbox-label">
+                    <label>
+                      Store page title
                       <input
-                        type="checkbox"
-                        checked={collection.showOnHome}
-                        onChange={(event) => updateCollectionDraft(collection.slug, { showOnHome: event.target.checked })}
+                        value={collection.title}
+                        onChange={(event) => updateCollectionDraft(collection.slug, { title: event.target.value })}
+                        required
                       />
-                      Show this section on the homepage
                     </label>
                     <ImageSourceField
                       label={`${collection.title} hero image`}
@@ -1516,53 +1675,6 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                       onChange={(value) => updateCollectionDraft(collection.slug, { heroImageUrl: value })}
                       onMessage={setSaveMessage}
                     />
-                    <div className="section-settings-grid">
-                      <label>
-                        Homepage scroll style
-                        <select
-                          value={collection.homeRailBehavior}
-                          onChange={(event) => updateCollectionDraft(collection.slug, {
-                            homeRailBehavior: event.target.value as ProductCollection['homeRailBehavior'],
-                          })}
-                        >
-                          {homeRailBehaviors.map((behavior) => (
-                            <option key={behavior.value} value={behavior.value}>
-                              {behavior.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        Auto-scroll speed
-                        <select
-                          value={collection.homeRailSpeed}
-                          onChange={(event) => updateCollectionDraft(collection.slug, {
-                            homeRailSpeed: event.target.value as ProductCollection['homeRailSpeed'],
-                          })}
-                          disabled={collection.homeRailBehavior !== 'auto'}
-                        >
-                          {homeRailSpeeds.map((speed) => (
-                            <option key={speed.value} value={speed.value}>
-                              {speed.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                    <div className="rail-behavior-options" role="radiogroup" aria-label={`${collection.title} homepage rail behavior`}>
-                      {homeRailBehaviors.map((behavior) => (
-                        <button
-                          type="button"
-                          key={behavior.value}
-                          className={collection.homeRailBehavior === behavior.value ? 'active' : ''}
-                          onClick={() => updateCollectionDraft(collection.slug, { homeRailBehavior: behavior.value })}
-                          aria-pressed={collection.homeRailBehavior === behavior.value}
-                        >
-                          <strong>{behavior.label}</strong>
-                          <small>{behavior.description}</small>
-                        </button>
-                      ))}
-                    </div>
                     <div className="display-style-options" role="radiogroup" aria-label={`${collection.title} display style`}>
                       {displayStyles.map((style) => (
                         <button
