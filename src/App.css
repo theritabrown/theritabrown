@@ -923,14 +923,12 @@
 }
 
 .display-style-editor > div:first-child strong,
-.display-style-options strong,
-.rail-behavior-options strong {
+.display-style-options strong {
   color: var(--ink);
 }
 
 .display-style-editor > div:first-child span,
-.display-style-options small,
-.rail-behavior-options small {
+.display-style-options small {
   color: var(--muted);
   font-size: 0.82rem;
   font-weight: 750;
@@ -958,8 +956,7 @@
   gap: 16px;
 }
 
-.settings-section-header h3,
-.setting-option-group h4 {
+.settings-section-header h3 {
   margin: 0;
   color: var(--ink);
   line-height: 1.1;
@@ -990,42 +987,6 @@
   color: var(--accent);
   background: color-mix(in srgb, var(--accent-2) 14%, var(--panel));
   cursor: help;
-}
-
-.setting-option-group {
-  display: grid;
-  gap: 9px;
-}
-
-.setting-option-group h4 {
-  font-size: 0.82rem;
-  letter-spacing: 0.02em;
-}
-
-.rail-behavior-options {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.rail-behavior-options button {
-  display: grid;
-  gap: 5px;
-  min-height: 96px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  color: var(--ink);
-  background: var(--panel-strong);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.rail-behavior-options button.active {
-  border-color: var(--accent);
-  outline: 3px solid color-mix(in srgb, var(--accent) 32%, transparent);
-  background: color-mix(in srgb, var(--accent-2) 10%, var(--panel-strong));
 }
 
 .display-style-options {
@@ -1808,7 +1769,6 @@
   .import-box,
   .appearance-layout,
   .display-style-options,
-  .rail-behavior-options,
   .section-settings-grid,
   .primary-import {
     grid-template-columns: 1fr;

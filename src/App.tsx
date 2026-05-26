@@ -1707,57 +1707,6 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                       </select>
                     </label>
                   </div>
-                  <div className="setting-option-group">
-                    <h4>Display style</h4>
-                    <div className="rail-behavior-options" role="radiogroup" aria-label="Homepage Rita Picks card display style">
-                      {cardStyles.map((style) => (
-                        <button
-                          type="button"
-                          key={style.value}
-                          className={homepageSectionDraft.cardStyle === style.value ? 'active' : ''}
-                          onClick={() => setHomepageSectionDraft({ ...homepageSectionDraft, cardStyle: style.value })}
-                          aria-pressed={homepageSectionDraft.cardStyle === style.value}
-                        >
-                          <strong>{style.label}</strong>
-                          <small>{style.description}</small>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="setting-option-group">
-                    <h4>Card size</h4>
-                    <div className="rail-behavior-options card-size-options" role="radiogroup" aria-label="Homepage Rita Picks card size">
-                      {cardSizes.map((size) => (
-                        <button
-                          type="button"
-                          key={size.value}
-                          className={homepageSectionDraft.cardSize === size.value ? 'active' : ''}
-                          onClick={() => setHomepageSectionDraft({ ...homepageSectionDraft, cardSize: size.value })}
-                          aria-pressed={homepageSectionDraft.cardSize === size.value}
-                        >
-                          <strong>{size.label}</strong>
-                          <small>{size.value === 'small' ? 'Compact cards' : size.value === 'large' ? 'Larger feature cards' : 'Balanced default'}</small>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="setting-option-group">
-                    <h4>Scroll behavior</h4>
-                    <div className="rail-behavior-options" role="radiogroup" aria-label="Rita Picks homepage rail behavior">
-                      {homeRailBehaviors.map((behavior) => (
-                        <button
-                          type="button"
-                          key={behavior.value}
-                          className={homepageSectionDraft.railBehavior === behavior.value ? 'active' : ''}
-                          onClick={() => setHomepageSectionDraft({ ...homepageSectionDraft, railBehavior: behavior.value })}
-                          aria-pressed={homepageSectionDraft.railBehavior === behavior.value}
-                        >
-                          <strong>{behavior.label}</strong>
-                          <small>{behavior.description}</small>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
                 <div className="settings-section">
