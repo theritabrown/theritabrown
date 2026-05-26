@@ -742,15 +742,9 @@ function RitaPicksPage({
       </header>
 
       {pickProducts.length ? (
-        <section className={`product-grid product-grid-${section.displayStyle} product-grid-card-${section.cardSize}`} aria-label={section.title}>
+        <section className={`product-grid product-grid-${section.displayStyle}`} aria-label={section.title}>
           {pickProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              showFavoriteBadge={false}
-              cardStyle={section.cardStyle}
-              cardSize={section.cardSize}
-            />
+            <ProductCard key={product.id} product={product} showFavoriteBadge={false} />
           ))}
         </section>
       ) : (
@@ -1603,7 +1597,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                   <h2>Rita Picks highlight</h2>
                 </div>
                 <p className="smart-hint">
-                  This homepage section and its View all page show products marked as Rita pick from every storefront.
+                  This highlights products marked as Rita pick from every storefront. Card style and size affect the homepage section only; View all uses the normal storefront layout.
                 </p>
                 <div className="field-row">
                   <label>
@@ -1615,7 +1609,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                     />
                   </label>
                   <label>
-                    Picks page layout
+                    View all page layout
                     <select
                       value={homepageSectionDraft.displayStyle}
                       onChange={(event) => setHomepageSectionDraft({
@@ -1676,7 +1670,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                 </div>
                 <div className="section-settings-grid">
                   <label>
-                    Card display style
+                    Homepage card display style
                     <select
                       value={homepageSectionDraft.cardStyle}
                       onChange={(event) => setHomepageSectionDraft({
@@ -1692,7 +1686,7 @@ function Admin({ data, usingDemoData }: { data: SiteData; usingDemoData: boolean
                     </select>
                   </label>
                   <label>
-                    Card size
+                    Homepage card size
                     <select
                       value={homepageSectionDraft.cardSize}
                       onChange={(event) => setHomepageSectionDraft({
